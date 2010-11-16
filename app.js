@@ -37,7 +37,6 @@ app.get('/', function(req, res){
     if (!req.session.id) {
       var newSessionId = Math.random().toString();
       var p = new models.Player(newSessionId, new models.Coords(0, 0), function(err, docs) {
-        //models.Player.prototype.findOne({_id: newSessionId}, function(err, document) {
         req.session.id = newSessionId;
         models.Player.prototype.all(function(err, playerResults) {
           res.render('index.ejs', {
