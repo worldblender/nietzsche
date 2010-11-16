@@ -6,7 +6,7 @@ var default_port = mongodb.Connection.DEFAULT_PORT;
 var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, {}), {native_parser: true});
 
 var TODO_SECONDS = 5;
-var MISSILE_RADIUS = 2000; // in meters
+var MISSILE_RADIUS = 300; // in meters
 
 db.open(function(err, db) {
   console.log("connected to mongodb");
@@ -58,15 +58,8 @@ function missileArrived(missile) {
   console.log("missile has arrived: " + missile);
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
-    console.log(result.documents[0].results[0].dis * RAD_TO_METERS);
+    console.log(result.documents[0].results);
   });
-  /*db.players.find({coords: {$near: missile.arrivalCoords}, $maxDistance: MISSILE_RADIUS / RAD_TO_METERS}, function(err, cursor) {
-    cursor.each(function(err, item) {
-      if (item != null) {
-        console.log(item);
-      }
-    });
-  });*/
 }
 
 if (module.parent.parent && module.parent.parent.id.substr(-5) === ".test") {
