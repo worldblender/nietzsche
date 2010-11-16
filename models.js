@@ -1,15 +1,16 @@
 var mongodb = require('mongodb');
+var util = require('util');
 
 var app = require('./app');
 
 var default_port = mongodb.Connection.DEFAULT_PORT;
 var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, {}), {native_parser: true});
 
-// configuration
-var INITIAL_HP = 100;
-var MISSILE_RADIUS = 300; // in meters
-var MISSILE_VELOCITY = 2;
-var MISSILE_ACCELERATION = 0.00868;
+// global configs
+INITIAL_HP = 100;
+MISSILE_RADIUS = 300; // in meters
+MISSILE_VELOCITY = 2;
+MISSILE_ACCELERATION = 0.00868;
 
 // physical constants
 var RAD_TO_METERS = 6371 * 1000;
@@ -20,13 +21,6 @@ db.open(function(err, db) {
 });
 
 // useful functions
-function printObject(o) {
-  var output = '';
-  for (property in o) {
-    output += property + ': ' + o[property]+'; ';
-  }
-  return output;
-}
 
 exports.clearDb = function() {
   db.dropDatabase(noCallback);
@@ -49,18 +43,18 @@ exports.Coords = function(long, lat) {
   this.lat = lat;
 }
 
-exports.Player = function(username, coords) {
+exports.Player = function(username, coords, callback) {
   this._id = username; // TODO(jeff): check uniqueness
   this.hp = INITIAL_HP;
   this.coords = coords; // TODO(jeff): check validity
   this.weapons = ['missile'];
-  db.players.insert(this);
+  db.players.insert(this, callback);
 }
 
 exports.Missile = function(username, arrivalCoords) {
   this.owner = username;
   var m = this;
-  m.departureTime = Date.parse(new Date());
+  m.departureTime = (new Date()).getTime() + 0.01; // hack of adding 0.01 to force storing in mongodb as float, so that util.inspect will read it out properly
   m.arrivalCoords = arrivalCoords; // TODO(jeff): check validity
   db.players.findOne({_id: username}, function(err, document) {
     // TODO(jeff): check for error
@@ -71,8 +65,8 @@ exports.Missile = function(username, arrivalCoords) {
     m.arrivalTime = m.departureTime + duration * 1000;
 
     db.missiles.insert(m, function(err, docs) {
-      console.log("lauched missile; " + printObject(m));
-      setTimeout(function() {missileArrived(docs[0]);}, m.arrivalTime - Date.parse(new Date()));
+      //console.log("lauched missile; " + printObject(m));
+      setTimeout(function() {missileArrived(docs[0]);}, m.arrivalTime - (new Date()).getTime());
     });
   });
 }
@@ -81,11 +75,27 @@ exports.Player.prototype.move = function(newCoords) {
   this.coords = newCoords; // TODO(jeff): check validity
 }
 
+exports.Player.prototype.all = function(callback) {
+  db.players.find(function(err, cursor) {
+    cursor.toArray(function(err, results) {
+      callback(err, results);
+    });
+  });
+}
+
+exports.Missile.prototype.all = function(callback) {
+  db.missiles.find(function(err, cursor) {
+    cursor.toArray(function(err, results) {
+      callback(err, results);
+    });
+  });
+}
+
 function missileArrived(missile) {
-  console.log("missile has arrived: " + missile);
+  //console.log("missile has arrived: " + missile);
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
-    console.log(result.documents[0].results);
+    //console.log(result.documents[0].results);
   });
 }
 
@@ -99,6 +109,8 @@ exports.initializeDb = function() {
     db.players = collection;
     // create players index
     db.players.createIndex([['coords', '2d']], noCallback);
+    // export findOne function
+    exports.Player.prototype.findOne = db.players.findOne;
   });
   db.collection('missiles', function(err, collection) {
     db.missiles = collection;

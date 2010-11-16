@@ -5,7 +5,8 @@ APP_NAME = 'nietzsche';
  */
 
 var express = require('express');
-var app = module.exports = express.createServer();
+var util = require('util');
+var app = module.exports = express.createServer(express.logger(), express.cookieDecoder(), express.session());
 
 var models = require('./models');
 
@@ -18,6 +19,7 @@ app.configure(function(){
   app.use(express.compiler({ src: __dirname + '/public', enable: ['less'] }));
   app.use(app.router);
   app.use(express.staticProvider(__dirname + '/public'));
+  app.set('view options', { layout: false });
 });
 
 app.configure('development', function(){
@@ -30,11 +32,32 @@ app.configure('production', function(){
 
 // Routes
 
+
 app.get('/', function(req, res){
-  res.render('index.jade', {
-    locals: {
-        title: 'Express'
-    }
+  models.Player.prototype.all(function(err, playerResults) {
+    models.Missile.prototype.all(function(err, missileResults) {
+      if (!req.session.id) {
+        var newSessionId = Math.random().toString();
+        var p = new models.Player(newSessionId, new models.Coords(0, 0), function(err, docs) {
+          models.Player.prototype.findOne({_id: newSessionId}, function(err, document) {
+            req.session.id = newSessionId;
+            res.render('index.ejs', {
+              locals: {
+                MISSILE_RADIUS: MISSILE_RADIUS,
+                MISSILE_VELOCITY: MISSILE_VELOCITY,
+                MISSILE_ACCELERATION: MISSILE_ACCELERATION,
+                APP_NAME: APP_NAME,
+                players: util.inspect(playerResults),
+                missiles: util.inspect(missileResults),
+                current_user: document
+              }
+            });
+          });
+        });
+      } else {
+        // TODO(jeff): they already have a session, DO SOMETHING
+      }
+    });
   });
 });
 
