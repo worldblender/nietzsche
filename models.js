@@ -9,7 +9,7 @@ var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, 
 // global configs
 INITIAL_HP = 100;
 MISSILE_RADIUS = 300; // in meters
-MISSILE_VELOCITY = 2;
+MISSILE_VELOCITY = 2000; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.00868;
 
 // physical constants
@@ -47,7 +47,7 @@ exports.Player = function(username, coords, callback) {
   this._id = username; // TODO(jeff): check uniqueness
   this.hp = INITIAL_HP;
   this.coords = coords; // TODO(jeff): check validity
-  this.weapons = ['missile'];
+  this.items = {'m1': (new Date()).getTime() - 0.01, 'h1': 1, 'coins': 5}; // items are things you have. m1 is your primary missile, h1 is a health pack. the value is the time when you can use it again (for missiles), or how many you have (coins, health pack)
   this.aliveSince = (new Date()).getTime() + 0.01;
   db.players.insert(this, callback);
 }
@@ -96,8 +96,9 @@ function missileArrived(missile) {
   //console.log("missile has arrived: " + missile);
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
-    //console.log(result.documents[0].results);
+    console.log(result.documents[0].results);
     // TODO(jeff): calc damage to hp
+    //(USER_HITPOINTS * (MISSILE_RADIUS - distance) / MISSILE_RADIUS).ceil
   });
 }
 

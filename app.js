@@ -49,12 +49,12 @@ function renderAll(res, missileResults, sessionId) {
 }
 
 function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)]
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function nameGenerator() {
-  var firstWord = ["Fuzzy", "Sticky", "Hot", "Fast", "Quick", "Lazy", "Crazy", "Easy", "Cold"];
-  var secondWord = ["Bear", "Feet", "Gun", "Shooter", "Boss", "Nerd", "Geek", "Dork", "Runner", "Driver"];
+  var firstWord = ["Fuzzy", "Sticky", "Hot", "Fast", "Quick", "Lazy", "Crazy", "Easy", "Cold", "Valley", "Evening", "Morning"];
+  var secondWord = ["Bear", "Feet", "Gun", "Shooter", "Boss", "Nerd", "Geek", "Dork", "Runner", "Driver", "Spy", "Clown"];
   return "Agent" + randomItem(firstWord) + randomItem(secondWord);
 }
 
