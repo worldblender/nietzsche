@@ -110,7 +110,8 @@ exports.initializeDb = function() {
     // create players index
     db.players.createIndex([['coords', '2d']], noCallback);
     // export findOne function
-    exports.Player.prototype.findOne = db.players.findOne;
+    //exports.Player.prototype.findOne = db.players.findOne;
+    exports.Player.prototype.findPlayer = function(playerName, callback) {db.players.findOne({_id: playerName}, callback);};
   });
   db.collection('missiles', function(err, collection) {
     db.missiles = collection;

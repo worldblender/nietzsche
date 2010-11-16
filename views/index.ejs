@@ -18,10 +18,15 @@ var msl_id = 8;
 var MAX_BOMB_TIME = 60*10*1000; // in milliseconds
 var TICK_INTERVAL = 1000; // in milliseconds
 var map;
-var myLocation;
-var playerIndex = -1;
 var allPlayers = <%= players %>;
 var allBombs = <%= missiles %>;
+var current_user = '<%= current_user %>';
+
+var currentPlayerIndex;
+for (var j = 0; j < allPlayers.length; ++j) {
+  if (allPlayers[j]._id == current_user)
+    currentPlayerIndex = j;
+}
 
 var gameOverlay;
 var gameOverlayProjection;
@@ -273,7 +278,7 @@ function createBomb(location, i) {
       title: "Bomb",
       icon: "/images/target_07.png",
       zIndex: 50000,
-      labelAnchor: myLocation
+      labelAnchor: myLocation // TODO: no more myLocation
       });
     bomb.owner = allBombs[i].owner;
     google.maps.event.addListener(bomb, 'click', function() {
@@ -330,7 +335,7 @@ function createPlayer(i) {
   marker.info = allPlayers[i];
   google.maps.event.addListener(marker, 'click', function() {
     var playerInfobox = new InfoBox({
-      content: "<b>" + this.getTitle() + "</b><br>" + this.info[6] + "hp<br>" + this.info[7] + "points",
+      content: "<b>" + this.getTitle() + "</b><br>" + this.info.hp + "hp<br>" + this.info[7] + "points",
       boxStyle: { width: "200px" },
       closeBoxURL: ""
     });
@@ -339,21 +344,13 @@ function createPlayer(i) {
   });
 }
 
-function updatePlayer(i, position) {
-  allPlayers[i].marker.setPosition(myLocation);
-}
-
 function createAllPlayers() {
   for (var i = 0; i < allPlayers.length; ++i) {
-    if (allPlayers[i]._id == <%= current_user._id %>) {
-      playerIndex = i;
-      continue;
-    }
     createPlayer(i);
   }
 }
 
-function createBombButton() {
+function createBombButton(myLocation) {
   var marker = new MarkerWithLabel({
     position: myLocation,
     map: map,
@@ -376,7 +373,7 @@ function createBombButton() {
     var bombLng1 = this.getPosition().lng();
     var distance = haversineDistance(myLocation.lat(), myLocation.lng(), bombLat1, bombLng1);
     var bombTime = 1000 * (-<%= MISSILE_VELOCITY %> + Math.sqrt(<%= MISSILE_VELOCITY %> * <%= MISSILE_VELOCITY %> + 2 * <%=MISSILE_ACCELERATION %> * distance)) / <%= MISSILE_ACCELERATION %>; // TODO(jeff): refactor this equation
-    allBombs.push([bombLat1, bombLng1, bombTime, null, null, "<%= current_user._id %>",myLocation.lat(),myLocation.lng()]);
+    allBombs.push([bombLat1, bombLng1, bombTime, null, null, "<%= current_user %>",myLocation.lat(),myLocation.lng()]);
     createBomb(this.getPosition(), allBombs.length-1);
     var targetUrl = "/game/dropBomb?lat=" + this.getPosition().lat() + "&lng=" + this.getPosition().lng();
     pushData = new Image();
@@ -385,24 +382,27 @@ function createBombButton() {
 }
 
 function gotPositionCallback(position) {
-  myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+  var myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
   pushData = new Image();
   pushData.src = "/game/playerMoved?lat=" + position.coords.latitude + "&lng=" + position.coords.longitude;
   map.setCenter(myLocation);
-  createBombButton(); // TODO(jeff): removed some bomb creation check
+  //createBombButton(myLocation); // TODO(jeff): removed some bomb creation check
 
-  allPlayers[playerIndex].coords.lat = position.coords.latitude;
-  allPlayers[playerIndex].coords.long = position.coords.longitude;
-  createPlayer(playerIndex);
+  // TODO(jeff): just copy over the coords object [need to rename lat to latitude, etc.]
+  allPlayers[currentPlayerIndex].coords.lat = position.coords.latitude;
+  allPlayers[currentPlayerIndex].coords.long = position.coords.longitude;
+  allPlayers[currentPlayerIndex].marker.setPosition(myLocation);
 
   navigator.geolocation.watchPosition(function(position) {
     //console.log("position: " + position.coords.latitude + ',' + position.coords.longitude + '; myLocation: ' + myLocation.lat() + ', ' + myLocation.lng());
-    if (myLocation.lat() == position.coords.latitude && myLocation.lng() == position.coords.longitude)
+    if (allPlayers[currentPlayerIndex].coords.lat == position.coords.latitude && allPlayers[currentPlayerIndex].coords.long == position.coords.longitude)
       return;
     pushData = new Image();
     pushData.src = "/game/playerMoved?lat=" + position.coords.latitude + "&lng=" + position.coords.longitude;
-    myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-    allPlayers[playerIndex].marker.setPosition(myLocation);
+    allPlayers[currentPlayerIndex].coords.lat = position.coords.latitude;
+    allPlayers[currentPlayerIndex].coords.long = position.coords.longitude;
+    var myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+    allPlayers[currentPlayerIndex].marker.setPosition(myLocation);
   });
   tick();
 }

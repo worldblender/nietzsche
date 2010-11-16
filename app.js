@@ -32,32 +32,43 @@ app.configure('production', function(){
 
 // Routes
 
-
 app.get('/', function(req, res){
-  models.Player.prototype.all(function(err, playerResults) {
-    models.Missile.prototype.all(function(err, missileResults) {
-      if (!req.session.id) {
-        var newSessionId = Math.random().toString();
-        var p = new models.Player(newSessionId, new models.Coords(0, 0), function(err, docs) {
-          models.Player.prototype.findOne({_id: newSessionId}, function(err, document) {
-            req.session.id = newSessionId;
-            res.render('index.ejs', {
-              locals: {
-                MISSILE_RADIUS: MISSILE_RADIUS,
-                MISSILE_VELOCITY: MISSILE_VELOCITY,
-                MISSILE_ACCELERATION: MISSILE_ACCELERATION,
-                APP_NAME: APP_NAME,
-                players: util.inspect(playerResults),
-                missiles: util.inspect(missileResults),
-                current_user: document
-              }
-            });
+  models.Missile.prototype.all(function(err, missileResults) {
+    if (!req.session.id) {
+      var newSessionId = Math.random().toString();
+      var p = new models.Player(newSessionId, new models.Coords(0, 0), function(err, docs) {
+        //models.Player.prototype.findOne({_id: newSessionId}, function(err, document) {
+        req.session.id = newSessionId;
+        models.Player.prototype.all(function(err, playerResults) {
+          res.render('index.ejs', {
+            locals: {
+              MISSILE_RADIUS: MISSILE_RADIUS,
+              MISSILE_VELOCITY: MISSILE_VELOCITY,
+              MISSILE_ACCELERATION: MISSILE_ACCELERATION,
+              APP_NAME: APP_NAME,
+              players: util.inspect(playerResults),
+              missiles: util.inspect(missileResults),
+              current_user: req.session.id
+            }
           });
         });
-      } else {
-        // TODO(jeff): they already have a session, DO SOMETHING
-      }
-    });
+      });
+    } else {
+      // TODO(jeff): remove duplicate code
+      models.Player.prototype.all(function(err, playerResults) {
+        res.render('index.ejs', {
+          locals: {
+            MISSILE_RADIUS: MISSILE_RADIUS,
+            MISSILE_VELOCITY: MISSILE_VELOCITY,
+            MISSILE_ACCELERATION: MISSILE_ACCELERATION,
+            APP_NAME: APP_NAME,
+            players: util.inspect(playerResults),
+            missiles: util.inspect(missileResults),
+            current_user: req.session.id
+          }
+        });
+      });
+    }
   });
 });
 
@@ -66,5 +77,6 @@ app.get('/', function(req, res){
 if (!module.parent) {
   app.listen(80);
   console.log("Express server listening on port %d", app.address().port)
+  models.clearDb();
   models.initializeDb();
 }
