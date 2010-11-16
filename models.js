@@ -6,8 +6,8 @@ var default_port = mongodb.Connection.DEFAULT_PORT;
 var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, {}), {native_parser: true});
 
 // configuration
+var INITIAL_HP = 100;
 var MISSILE_RADIUS = 300; // in meters
-var STARTING_HP = 100;
 var MISSILE_VELOCITY = 2;
 var MISSILE_ACCELERATION = 0.00868;
 
@@ -29,7 +29,7 @@ function printObject(o) {
 }
 
 exports.clearDb = function() {
-  db.dropDatabase(function(err, result) {});
+  db.dropDatabase(noCallback);
 };
 
 function haversineDistance(coords1, coords2) {
@@ -41,16 +41,17 @@ function haversineDistance(coords1, coords2) {
   return d;  
 }
 
+function noCallback(err, p) {};
+
 // Models
 exports.Coords = function(long, lat) {
   this.long = long;
   this.lat = lat;
 }
 
-
 exports.Player = function(username, coords) {
   this._id = username; // TODO(jeff): check uniqueness
-  this.hp = STARTING_HP;
+  this.hp = INITIAL_HP;
   this.coords = coords; // TODO(jeff): check validity
   this.weapons = ['missile'];
   db.players.insert(this);
@@ -97,11 +98,11 @@ exports.initializeDb = function() {
   db.collection('players', function(err, collection) {
     db.players = collection;
     // create players index
-    db.players.createIndex([['coords', '2d']], function(err, indexName) {});
+    db.players.createIndex([['coords', '2d']], noCallback);
   });
   db.collection('missiles', function(err, collection) {
     db.missiles = collection;
     // create missiles index
-    db.missiles.createIndex([['owner', 1]], function(err, indexName) {});
+    db.missiles.createIndex([['owner', 1]], noCallback);
   });
 }
