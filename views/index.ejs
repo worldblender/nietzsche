@@ -160,25 +160,10 @@ function initialize() {
 function theme() {
   var platoMapStyles = [
   {
-    featureType: "road.arterial",
-    elementType: "geometry",
-    stylers: [
-      { visibility: "simplified" },
-      { hue: "#f6ff00" },
-      { gamma: 0.38 }
-    ]
-  },{
     featureType: "water",
     elementType: "all",
     stylers: [
       { lightness: 36 }
-    ]
-  },{
-    featureType: "road.highway",
-    elementType: "all",
-    stylers: [
-      { visibility: "simplified" },
-      { gamma: 0.76 }
     ]
   },{
     featureType: "all",
@@ -187,7 +172,7 @@ function theme() {
       { visibility: "off" }
     ]
   },{
-    featureType: "road.local",
+    featureType: "road",
     elementType: "all",
     stylers: [
       { visibility: "off" }
@@ -335,13 +320,18 @@ function createPlayer(i) {
   marker.info = allPlayers[i];
   google.maps.event.addListener(marker, 'click', function() {
     var playerInfobox = new InfoBox({
-      content: "<b>" + this.getTitle() + "</b><br>" + this.info.hp + "hp<br>" + this.info[7] + "points",
+      content: "<b>" + this.getTitle() + "</b><br>" + this.info.hp + "hp<br>" + calcXP(this.info.aliveSince) + "XP",
       boxStyle: { width: "200px" },
       closeBoxURL: ""
     });
     playerInfobox.open(map, this);
     setTimeout(function(){playerInfobox.close()}, 4000);
   });
+}
+
+function calcXP(aliveSince) {
+  // TODO(jeff): getting the date on client side is not a good idea
+  return Math.floor(((new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
 }
 
 function createAllPlayers() {

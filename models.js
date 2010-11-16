@@ -48,6 +48,7 @@ exports.Player = function(username, coords, callback) {
   this.hp = INITIAL_HP;
   this.coords = coords; // TODO(jeff): check validity
   this.weapons = ['missile'];
+  this.aliveSince = (new Date()).getTime() + 0.01;
   db.players.insert(this, callback);
 }
 
@@ -96,6 +97,7 @@ function missileArrived(missile) {
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
     //console.log(result.documents[0].results);
+    // TODO(jeff): calc damage to hp
   });
 }
 

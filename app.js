@@ -32,41 +32,42 @@ app.configure('production', function(){
 
 // Routes
 
+function renderAll(res, missileResults, sessionId) {
+  models.Player.prototype.all(function(err, playerResults) {
+    res.render('index.ejs', {
+      locals: {
+        MISSILE_RADIUS: MISSILE_RADIUS,
+        MISSILE_VELOCITY: MISSILE_VELOCITY,
+        MISSILE_ACCELERATION: MISSILE_ACCELERATION,
+        APP_NAME: APP_NAME,
+        players: util.inspect(playerResults),
+        missiles: util.inspect(missileResults),
+        current_user: sessionId
+      }
+    });
+  });
+}
+
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function nameGenerator() {
+  var firstWord = ["Fuzzy", "Sticky", "Hot", "Fast", "Quick", "Lazy", "Crazy", "Easy", "Cold"];
+  var secondWord = ["Bear", "Feet", "Gun", "Shooter", "Boss", "Nerd", "Geek", "Dork", "Runner", "Driver"];
+  return "Agent" + randomItem(firstWord) + randomItem(secondWord);
+}
+
 app.get('/', function(req, res){
   models.Missile.prototype.all(function(err, missileResults) {
     if (!req.session.id) {
-      var newSessionId = Math.random().toString();
+      var newSessionId = nameGenerator();
       var p = new models.Player(newSessionId, new models.Coords(0, 0), function(err, docs) {
         req.session.id = newSessionId;
-        models.Player.prototype.all(function(err, playerResults) {
-          res.render('index.ejs', {
-            locals: {
-              MISSILE_RADIUS: MISSILE_RADIUS,
-              MISSILE_VELOCITY: MISSILE_VELOCITY,
-              MISSILE_ACCELERATION: MISSILE_ACCELERATION,
-              APP_NAME: APP_NAME,
-              players: util.inspect(playerResults),
-              missiles: util.inspect(missileResults),
-              current_user: req.session.id
-            }
-          });
-        });
+        renderAll(res, missileResults, req.session.id);
       });
     } else {
-      // TODO(jeff): remove duplicate code
-      models.Player.prototype.all(function(err, playerResults) {
-        res.render('index.ejs', {
-          locals: {
-            MISSILE_RADIUS: MISSILE_RADIUS,
-            MISSILE_VELOCITY: MISSILE_VELOCITY,
-            MISSILE_ACCELERATION: MISSILE_ACCELERATION,
-            APP_NAME: APP_NAME,
-            players: util.inspect(playerResults),
-            missiles: util.inspect(missileResults),
-            current_user: req.session.id
-          }
-        });
-      });
+      renderAll(res, missileResults, req.session.id);
     }
   });
 });
