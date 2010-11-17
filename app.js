@@ -6,6 +6,7 @@ APP_NAME = 'nietzsche';
 
 var express = require('express');
 var util = require('util');
+var io = require('socket.io');
 var app = module.exports = express.createServer(express.logger(), express.cookieDecoder(), express.session());
 
 var models = require('./models');
@@ -73,10 +74,23 @@ app.get('/', function(req, res){
 });
 
 // Only listen on $ node app.js
-
 if (!module.parent) {
   app.listen(80);
   console.log("Express server listening on port %d", app.address().port)
   models.clearDb();
   models.initializeDb();
 }
+
+// socket.io
+// TODO(jeff): compress/pack the socket.io .js file
+// TODO(jeff): why does it say the conection is ready twice?
+var socket = io.listen(app);
+socket.on('connection', function(client) {
+  console.log('socket.io connection');
+  client.on('message', function(obj) {
+    console.log(util.inspect(obj));
+  });
+  client.on('disconnect', function() {
+    console.log('socket.io disconnect');
+  });
+});
