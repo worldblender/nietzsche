@@ -96,14 +96,14 @@ function missileArrived(missile) {
   //console.log("missile has arrived: " + missile);
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
-    console.log(result.documents[0].results);
-    // TODO(jeff): calc damage to hp
-    //(USER_HITPOINTS * (MISSILE_RADIUS - distance) / MISSILE_RADIUS).ceil
+    for (var i = 0; i < result.documents[0].results.length; ++i) {
+      // TODO(jeff): race condition :-(   use findAndModify in the future
+      var obj = result.documents[0].results[i].obj;
+      var damage = Math.ceil(INITIAL_HP * (MISSILE_RADIUS - result.documents[0].results[i].dis * RAD_TO_METERS) / MISSILE_RADIUS);
+      obj.hp -= damage;
+      db.players.save(obj, noCallback);
+    }
   });
-}
-
-if (module.parent.parent && module.parent.parent.id.substr(-5) === ".test") {
-  setTimeout(function() {console.log("Closing mongodb for test run"); db.close();}, 10000);
 }
 
 exports.initializeDb = function() {
