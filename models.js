@@ -9,7 +9,7 @@ var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, 
 // global configs
 INITIAL_HP = 100;
 MISSILE_RADIUS = 300; // in meters
-MISSILE_VELOCITY = 2000; // TODO(jeff): 2 is the value we'll have in production
+MISSILE_VELOCITY = 200; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.00868;
 
 // physical constants

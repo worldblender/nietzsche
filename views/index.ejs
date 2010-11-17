@@ -380,7 +380,7 @@ function gotPositionCallback(position) {
   var myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
   //pushData = new Image();
   //pushData.src = "/game/playerMoved?lat=" + position.coords.latitude + "&lng=" + position.coords.longitude;
-  socket.send('move,' + position.coords.latitude + ',' + position.coords.longitude);
+  socket.send('move,' + position.coords.latitude + ',' + position.coords.longitude + ',' + position.coords.accuracy);
   map.setCenter(myLocation);
   createBombButton(myLocation); // TODO(jeff): removed some bomb creation check
 
@@ -395,7 +395,7 @@ function gotPositionCallback(position) {
       return;
     //pushData = new Image();
     //pushData.src = "/game/playerMoved?lat=" + position.coords.latitude + "&lng=" + position.coords.longitude;
-    socket.send('move,' + position.coords.latitude + ',' + position.coords.longitude);
+    socket.send('move,' + position.coords.latitude + ',' + position.coords.longitude + ',' + position.coords.accuracy);
     allPlayers[currentPlayerIndex].coords.lat = position.coords.latitude;
     allPlayers[currentPlayerIndex].coords.long = position.coords.longitude;
     var myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
