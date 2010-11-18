@@ -1,437 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<style type="text/css">
-  html { height: 100%; }
-  body { height: 100%; margin: 0px; padding: 0px; font-family: Monospace; font-weight: bold; color: #9AFE2E; }
-  #map_canvas { width:100%; height: 100%; }
-</style>
+<meta charset="utf-8">
+<title><%= APP_NAME %></title>
+
+<!-- Sencha Touch CSS -->
+<link rel="stylesheet" href="/stylesheets/sencha-touch-debug.css" type="text/css">
+
+<!-- Google Maps JS -->
 <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
-<script src="/socket.io/socket.io.js"></script> 
-<script type="text/javascript" src="/javascripts/markerWithLabel.js"></script>
-<script type="text/javascript" src="/javascripts/infobox.js"></script>
+
+<!-- Sencha Touch JS -->
+<script type="text/javascript" src="/javascripts/sencha-touch-debug-w-comments.js"></script>
+
 <script type="text/javascript">
-var msl_timeleft = 2;
-var msl_obj = 3;
-var msl_blastObj = 4;
-var msl_id = 8;
 
-var MAX_BOMB_TIME = 60*10*1000; // in milliseconds
-var TICK_INTERVAL = 1000; // in milliseconds
-var map;
-var allPlayers = <%= players %>;
-var allBombs = <%= missiles %>;
-var current_user = '<%= current_user %>';
-
-var socket = new io.Socket(); 
-socket.connect();
-
-var currentPlayerIndex;
-for (var j = 0; j < allPlayers.length; ++j) {
-  if (allPlayers[j]._id == current_user)
-    currentPlayerIndex = j;
-}
-
-var gameOverlay;
-var gameOverlayProjection;
-
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  var R = 6371 * 1000; // meters;
-  var dLat = (lat2-lat1) * Math.PI / 180;
-  var dLon = (lon2-lon1) * Math.PI / 180;
-  var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  var d = R * c;
-  return d;
-}
-
-function createButton(html) {
-  var b = document.createElement('DIV');
-  b.style.padding = '5px';
-  b.innerHTML = html;
-  b.style.display = "none";
-  map.controls[google.maps.ControlPosition.TOP_LEFT].push(b);
-  return b;
-}
-
-GameOverlay.prototype = new google.maps.OverlayView();
-
-function GameOverlay(map) {
-  this.map_ = map;
-  this.setMap(map);
-}
-
-function getBearing(source,target)
-{
-  var y = Math.sin(target.lng()-source.lng()) * Math.cos(target.lat());
-  var x = Math.cos(source.lat())*Math.sin(target.lat()) - Math.sin(source.lat())*Math.cos(target.lat())*Math.cos(target.lng()-source.lng());
-  var brng = Math.atan2(y, x);
-  return brng;
-}
-
-GameOverlay.prototype.draw = function() {
-  this.drawMissles();
-}
-
-GameOverlay.prototype.drawMissles = function() {
-  for (var i = 0; i < allBombs.length; ++i) {
-    if(gameOverlayProjection != null)
-    {
-      var targetLatLng=new google.maps.LatLng(allBombs[i].arrivalCoords.lat, allBombs[i].arrivalCoords.long);
-      var sourceLatLng=new google.maps.LatLng(allBombs[i].departureCoords.lat, allBombs[i].departureCoords.long);
-      var targetLocation = gameOverlayProjection.fromLatLngToDivPixel(targetLatLng);
-      var launchLocation = gameOverlayProjection.fromLatLngToDivPixel(sourceLatLng);
-      var w = targetLocation.x-launchLocation.x;
-      var h = targetLocation.y-launchLocation.y;
-      if (allBombs[i].timeLeft > 0) {
-        // draw the missle a distance along the path according to how close it is
-        var distance = haversineDistance(allBombs[i].arrivalCoords.lat, allBombs[i].arrivalCoords.long, allBombs[i].departureCoords.lat, allBombs[i].departureCoords.long);
-        var duration = 1000 * (-<%= MISSILE_VELOCITY %> + Math.sqrt(<%= MISSILE_VELOCITY %> * <%= MISSILE_VELOCITY %> + 2 * <%=MISSILE_ACCELERATION %> * distance)) / <%= MISSILE_ACCELERATION %>; // TODO(jeff): refactor this equation
-        dOnPath=allBombs[i][2]/duration;
-        var x = launchLocation.x*(dOnPath)+targetLocation.x*(1-dOnPath);
-        var y = launchLocation.y*(dOnPath)+targetLocation.y*(1-dOnPath);
-        var angleDeg=getBearing(targetLatLng,sourceLatLng)*180/(Math.PI);;
-        var oldBomb=document.getElementById('msl_'+allBombs[msl_id]);
-        if(oldBomb == null)
-        {
-          var missle=new Image();
-          missle.src="/images/rocket_06.png";
-          missle.id="msl_" + allBombs[msl_id];
-          missle.onload=function(){
-            missle.style.cssText="position:absolute; -webkit-transform: rotate("+ angleDeg + "deg); -moz-transform: rotate(" + angleDeg+ "deg);";
-            missle.style.pixelLeft=x;
-            missle.style.pixelTop=y;
-            try{
-              document.getElementById('imageLayer').appendChild(this);
-              //$(this).animate({pixelLeft: targetLocation.x,pixelTop: targetLocation.y},5000, function () {
-                  // animation complete remove rocket or do the explotion animation or something
-                  // remove bomb from dataset
-              //});
-            } catch(e) {
-              console.log(e.message);
-            }
-          }
-        } else {
-          oldBomb.style.pixelLeft=x-oldBomb.width/2;
-          oldBomb.style.pixelTop=y-oldBomb.height/2;
+Ext.setup({
+  icon: '/images/icon.png',
+  tabletStartupScreen: '/images/tablet_startup.png',
+  phoneStartupScreen: '/images/phone_startup.jpeg',
+  glossOnIcon: true,
+  onReady: function() {
+    var map = new Ext.Map({
+      iconCls: 'search',
+      title: 'Map',
+      mapOptions: {
+        center: new google.maps.LatLng(37.3816, -122.1357),
+        zoom: 12,
+        mapTypeId: google.maps.MapTypeId.TERRAIN
+      }
+    });
+    var tabpanel = new Ext.TabPanel({
+      fullscreen: true,
+      tabBar: {
+        dock: 'bottom',
+        layout: {
+          pack: 'center'
         }
-      }
-    }
-  }
-}
-
-GameOverlay.prototype.onAdd = function() {
-  gameOverlayProjection = this.getProjection();
-  var sw = gameOverlayProjection.fromLatLngToDivPixel(map.getBounds().getSouthWest());
-  var ne = gameOverlayProjection.fromLatLngToDivPixel(map.getBounds().getNorthEast());
-  var div = document.createElement('div');
-  div.style.left = sw.x + 'px';
-  div.style.top = ne.y + 'px';
-  div.style.width = (ne.x-sw.x) + 'px';
-  div.style.height = (sw.y-ne.y) + 'px';
-  div.style.border = "none";
-  div.style.borderWidth = "0px";
-  div.style.position = "absolute";
-  div.innerHTML = "<div id='imageLayer'></div>";
-  var panes = this.getPanes();
-  panes.overlayLayer.appendChild(div);
-}
-
-function initialize() {
-  var mapOptions = {
-    zoom: 13,
-    mapTypeIds: [google.maps.MapTypeId.TERRAIN, "platoMap"],
-    navigationControl: true,
-    navigationControlOptions: { style: google.maps.NavigationControlStyle.SMALL },
-    mapTypeControl: false,
-    streetViewControl: false
-  };
-  map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
-  theme();
-  createAllPlayers();
-  createAllBombs();
-  //drawAllInnocents();
-  setMapLocation();
-  var leaderboardButton = createButton("<a href='http://apps.facebook.com/worldblender_plato/' title='Top Scores'><img src='/images/leaderboard.png'></a>");
-  gameOverlay = new GameOverlay(map);
-  leaderboardButton.style.display = "block";
-  var rulesButton = createButton("<a href='#' title='Show Rules' onclick='showRules(); return false'><img src='/images/rules.png'></a>");
-  rulesButton.style.display = "block";
-  var restartButton = createButton("<a href='/game/restart' title='Restart Game'><img src='/images/restart.png'></a>");
-  restartButton.style.display = "block";
-}
-
-function theme() {
-  var platoMapStyles = [
-  {
-    featureType: "water",
-    elementType: "all",
-    stylers: [
-      { lightness: 36 }
-    ]
-  },{
-    featureType: "all",
-    elementType: "labels",
-    stylers: [
-      { visibility: "off" }
-    ]
-  },{
-    featureType: "road",
-    elementType: "all",
-    stylers: [
-      { visibility: "off" }
-    ]
-  },{
-    featureType: "transit",
-    elementType: "all",
-    stylers: [
-      { visibility: "off" }
-    ]
-  },{
-    featureType: "administrative",
-    elementType: "labels",
-    stylers: [
-      { visibility: "on" },
-      { gamma: 0.39 },
-      { lightness: -4 },
-      { saturation: 100 }
-    ]
-  },{
-    featureType: "landscape.man_made",
-    elementType: "all",
-    stylers: [
-      { visibility: "off" }
-    ]
-  },{
-    featureType: "all",
-    elementType: "all",
-    stylers: [
-      { invert_lightness: true }
-    ]
-  },{
-    featureType: "poi",
-    elementType: "all",
-    stylers: [
-      { visibility: "off" }
-    ]
-  }];
-  var platoMap = new google.maps.StyledMapType(platoMapStyles, {name: "Plato Style" });
-  map.mapTypes.set('platoMap', platoMap);
-  map.setMapTypeId('platoMap');
-}
-
-function tick() {
-  for(var i = 0; i<allBombs.length;i++)
-  {
-    if (allBombs[i][msl_timeleft] > 0 && allBombs[i][msl_timeleft] != null) {
-      // allBombs[i][msl_obj].setVisible(!allBombs[i][msl_obj].getVisible());
-      allBombs[i][msl_obj].setOptions({labelContent: Math.round(allBombs[i][msl_timeleft] / 1000)});
-      var tmpTime = allBombs[i][msl_timeleft];
-      if (tmpTime > MAX_BOMB_TIME) {
-        tmpTime = MAX_BOMB_TIME;
-      }
-      allBombs[i][msl_blastObj].setOptions({
-        fillOpacity: (1 - tmpTime / MAX_BOMB_TIME) * 0.2,
-        strokeOpacity: (1 - tmpTime / MAX_BOMB_TIME) * 0.8
-        });
-    } else {
-      allBombs[i][msl_blastObj].setMap(null);
-      allBombs[i][msl_obj].setIcon("/images/explosion.gif");
-      allBombs[i][msl_obj].setVisible(true);
-      setTimeout("destroyBomb(i);",1500);
-      setTimeout("window.location.reload(true);", 1500);
-      allBombs[i][msl_timeleft] = null;
-      var boomSound = document.getElementById("boom");
-      boomSound.Play();
-    }
-    allBombs[i].timeLeft -= TICK_INTERVAL;
-  }
-  setTimeout("tick();", TICK_INTERVAL);
-
-  if(gameOverlay != null) {
-    gameOverlay.draw();
-  }
-}
-
-function destroyBomb(i) {
-  allBombs[i][msl_obj].setMap(null);
-  allBombs.splice(i,1);
-}
-
-function createBomb(location, i) {
-  if(allBombs[i][msl_obj] == null)
-  {
-    var bomb = new MarkerWithLabel({
-      position: location,
-      map: map,
-      title: "Bomb",
-      icon: "/images/target_07.png",
-      zIndex: 50000,
-      labelAnchor: myLocation // TODO: no more myLocation
-      });
-    bomb.owner = allBombs[i].owner;
-    google.maps.event.addListener(bomb, 'click', function() {
-      var bombInfobox = new InfoBox({
-        content: this.owner + "'s bomb",
-        boxStyle: { width: "200px" },
-        closeBoxURL: ""
-      });
-      bombInfobox.open(map, this);
-      setTimeout(function(){bombInfobox.close()}, 4000);
+      },
+      items: [
+        map,
+        { iconCls: 'settings', title: 'Options' },
+        { iconCls: 'team', title: 'Friends' },
+        { iconCls: 'bolt', title: 'Action' },
+        { iconCls: 'user', title: 'Stats' }
+      ]
     });
-
-    allBombs[i][msl_obj] = bomb;
   }
-  // TODO(Jeff): optimization: if bomb will not explode within MAX_BOMB_TIME, don't draw the circle yet
-  if(allBombs[i][msl_blastObj] == null)
-  {
-    var bombFallout = new google.maps.Circle({
-      map: map,
-      center: bomb.getPosition(),
-      fillColor: "#FF0000",
-      fillOpacity: 0.2,
-      strokeColor: "#FF0000",
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      radius: <%= MISSILE_RADIUS %>
-      });
-    allBombs[i][msl_blastObj] = bombFallout;
-  }
-}
+});
 
-function createAllBombs() {
-  for (i = 0; i < allBombs.length; i++) {
-    var location = new google.maps.LatLng(allBombs[i][0], allBombs[i][1]);
-    if (allBombs[i][2] > 0) {
-      createBomb(location, i);
-    }
-  }
-}
-
-function createPlayer(i) {
-  var icon = "/images/soldier.png";
-  var location = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.long);
-  var marker = new google.maps.Marker({
-    position: location,
-    map: map,
-    title: allPlayers[i]._id,
-    icon: icon,
-    zIndex: 0
-  });
-
-  allPlayers[i].marker = marker;
-
-  marker.info = allPlayers[i];
-  google.maps.event.addListener(marker, 'click', function() {
-    var playerInfobox = new InfoBox({
-      content: "<b>" + this.getTitle() + "</b><br>" + this.info.hp + "hp<br>" + calcXP(this.info.aliveSince) + "XP",
-      boxStyle: { width: "200px" },
-      closeBoxURL: ""
-    });
-    playerInfobox.open(map, this);
-    setTimeout(function(){playerInfobox.close()}, 4000);
-  });
-}
-
-function calcXP(aliveSince) {
-  // TODO(jeff): getting the date on client side is not a good idea
-  return Math.floor(((new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
-}
-
-function createAllPlayers() {
-  for (var i = 0; i < allPlayers.length; ++i) {
-    createPlayer(i);
-  }
-}
-
-function createBombButton(myLocation) {
-  var marker = new MarkerWithLabel({
-    position: myLocation,
-    map: map,
-    title: "Your bomb",
-    icon: "/images/crosshairs.png",
-    draggable: true,
-    zIndex: 100000,
-    labelContent: "",
-    labelAnchor: myLocation
-  });
-
-  google.maps.event.addListener(marker, "dragend", function() {
-    var distance = haversineDistance(myLocation.lat(), myLocation.lng(), this.getPosition().lat(), this.getPosition().lng());
-    var displayedBombTime = Math.round((-<%= MISSILE_VELOCITY %> + Math.sqrt(<%= MISSILE_VELOCITY %> * <%= MISSILE_VELOCITY %> + 2 * <%=MISSILE_ACCELERATION %> * distance)) / <%= MISSILE_ACCELERATION %>);
-    this.setOptions({labelContent: displayedBombTime});
-  });
-  google.maps.event.addListener(marker, "dblclick", function() {
-    this.setMap(null);
-    var bombLat1 = this.getPosition().lat();
-    var bombLng1 = this.getPosition().lng();
-    var distance = haversineDistance(myLocation.lat(), myLocation.lng(), bombLat1, bombLng1);
-    var bombTime = 1000 * (-<%= MISSILE_VELOCITY %> + Math.sqrt(<%= MISSILE_VELOCITY %> * <%= MISSILE_VELOCITY %> + 2 * <%=MISSILE_ACCELERATION %> * distance)) / <%= MISSILE_ACCELERATION %>; // TODO(jeff): refactor this equation
-    allBombs.push([bombLat1, bombLng1, bombTime, null, null, "<%= current_user %>",myLocation.lat(),myLocation.lng()]);
-    createBomb(this.getPosition(), allBombs.length-1);
-    //var targetUrl = "/game/dropBomb?lat=" + this.getPosition().lat() + "&lng=" + this.getPosition().lng();
-    //pushData = new Image();
-    //pushData.src = targetUrl;
-    socket.send('m1,' + this.getPosition().lat() + ',' + this.getPosition.lng());
-  });
-}
-
-function gotPositionCallback(position) {
-  var myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-  //pushData = new Image();
-  //pushData.src = "/game/playerMoved?lat=" + position.coords.latitude + "&lng=" + position.coords.longitude;
-  socket.send('move,' + position.coords.latitude + ',' + position.coords.longitude + ',' + position.coords.accuracy);
-  map.setCenter(myLocation);
-  createBombButton(myLocation); // TODO(jeff): removed some bomb creation check
-
-  // TODO(jeff): just copy over the coords object [need to rename lat to latitude, etc.]
-  allPlayers[currentPlayerIndex].coords.lat = position.coords.latitude;
-  allPlayers[currentPlayerIndex].coords.long = position.coords.longitude;
-  allPlayers[currentPlayerIndex].marker.setPosition(myLocation);
-
-  navigator.geolocation.watchPosition(function(position) {
-    //console.log("position: " + position.coords.latitude + ',' + position.coords.longitude + '; myLocation: ' + myLocation.lat() + ', ' + myLocation.lng());
-    if (allPlayers[currentPlayerIndex].coords.lat == position.coords.latitude && allPlayers[currentPlayerIndex].coords.long == position.coords.longitude)
-      return;
-    //pushData = new Image();
-    //pushData.src = "/game/playerMoved?lat=" + position.coords.latitude + "&lng=" + position.coords.longitude;
-    socket.send('move,' + position.coords.latitude + ',' + position.coords.longitude + ',' + position.coords.accuracy);
-    allPlayers[currentPlayerIndex].coords.lat = position.coords.latitude;
-    allPlayers[currentPlayerIndex].coords.long = position.coords.longitude;
-    var myLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-    allPlayers[currentPlayerIndex].marker.setPosition(myLocation);
-  });
-  tick();
-}
-
-function setMapLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(gotPositionCallback); // TODO(jeff): catch on error
-  } else {
-    alert("Your browser does not support geolocation. Please try a different browser.");
-  }
-}
-
-window.onload = initialize;
 </script>
 
 </head>
-<body>
-
-<div id="map_canvas"></div>
-<div id="rules" class="white_content">
-<%= APP_NAME %> Instructions:<br>
-1. You get one bomb at a time. Drag it to where you want.<br>
-2. Double click the bomb to light it.<br>
-3. The further away you drop a bomb, the longer it takes to detonate.<br>
-4. Being near an exploding bomb (even your own) will hurt you.<br>
-5. Move around in the (real) world to avoid bombs.<br>
-<br>
-<center><input type="button" value="Continue" onClick="document.getElementById('rules').style.display = 'none'; document.getElementById('fade').style.display = 'none';"></center>
-</div>
-<div id="fade" class="black_overlay"></div>
-
-<embed src="exp04.au" autostart=false width=0 height=0 id="boom" enablejavascript="true">
-
-</body>
+<body></body>
 </html>
