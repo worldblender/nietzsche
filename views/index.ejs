@@ -13,6 +13,10 @@
 <!-- Sencha Touch JS -->
 <script type="text/javascript" src="/javascripts/sencha-touch-debug-w-comments.js"></script>
 
+<script type="text/javascript" src="/javascripts/mapStyles.js"></script>
+
+<script type="text/javascript" src="/javascripts/menus.js"></script>
+
 <script type="text/javascript">
 
 Ext.setup({
@@ -21,14 +25,28 @@ Ext.setup({
   phoneStartupScreen: '/images/phone_startup.jpeg',
   glossOnIcon: true,
   onReady: function() {
-    var map = new Ext.Map({
+    var customMap = new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"});
+    var world = new Ext.Map({
       iconCls: 'search',
-      title: 'Map',
+      title: 'World',
       mapOptions: {
-        center: new google.maps.LatLng(37.3816, -122.1357),
-        zoom: 12,
-        mapTypeId: google.maps.MapTypeId.TERRAIN
+        navigationControl: false,
+        zoom: 13,
+        mapTypeId: "customMap",
+        mapTypeControl: false,
+        streetViewControl: false
+      },
+      listeners: {
+        maprender: function(comp, map) {
+          map.mapTypes.set("customMap", customMap);
+        }
       }
+    });
+    var actions = new Ext.NestedList({
+      title: "Actions",
+      iconCls: "settings",
+      displayField: "text",
+      store: Menus.actionStore
     });
     var tabpanel = new Ext.TabPanel({
       fullscreen: true,
@@ -39,11 +57,11 @@ Ext.setup({
         }
       },
       items: [
-        map,
-        { iconCls: 'settings', title: 'Options' },
-        { iconCls: 'team', title: 'Friends' },
-        { iconCls: 'bolt', title: 'Action' },
-        { iconCls: 'user', title: 'Stats' }
+        world,
+        actions,
+        { iconCls: 'settings', title: 'Shop' },
+        { iconCls: 'team', title: 'Team' },
+        { iconCls: 'user', title: 'Profile' }
       ]
     });
   }
