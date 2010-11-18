@@ -48,6 +48,18 @@ Ext.setup({
       displayField: "text",
       store: Menus.actionStore
     });
+    var shop = new Ext.NestedList({
+      title: "Shop",
+      iconCls: "settings",
+      displayField: "text",
+      store: Menus.shopStore
+    });
+    var team = new Ext.NestedList({
+      title: "Team",
+      iconCls: "team",
+      displayField: "text",
+      store: Menus.teamStore
+    });
     var tabpanel = new Ext.TabPanel({
       fullscreen: true,
       tabBar: {
@@ -59,9 +71,9 @@ Ext.setup({
       items: [
         world,
         actions,
-        { iconCls: 'settings', title: 'Shop' },
-        { iconCls: 'team', title: 'Team' },
-        { iconCls: 'user', title: 'Profile' }
+        shop,
+        team,
+        { iconCls: "user", title: "Profile" }
       ]
     });
   }
