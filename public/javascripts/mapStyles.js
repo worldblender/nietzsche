@@ -6,7 +6,7 @@ MapStyles.tron = [{
   featureType: "water",
   elementType: "all",
   stylers: [
-    { lightness: 36 }
+    { lightness: 16 }
   ]
 },{
   featureType: "all",

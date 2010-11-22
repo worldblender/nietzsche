@@ -39,7 +39,7 @@ Ext.setup({
         height: 260,
         styleHtmlContent: true,
         dockedItems: overlayTitle,
-        html: "Tap where you want to launch a missile or place a mine"
+        html: "Tap where you want to launch a missile or place a landmine"
       });
       overlayTitle.setTitle(button.text);
       overlay.show('pop');
@@ -135,7 +135,7 @@ Ext.setup({
 
     var missions = new Ext.NestedList({
       title: "Missions",
-      iconCls: "settings",
+      iconCls: "favorites",
       displayField: "text",
       getItemTextTpl: function(node) {return "<img src='http://www1.eveinfo.com/img/icons/64_64/icon13_04.png'>{text}";},
       store: Menus.missionsStore
@@ -155,7 +155,6 @@ Ext.setup({
       store: Menus.teamStore
     });
     team.on('leafitemtap', onTap);
-
 
     tabpanel = new Ext.TabPanel({
       fullscreen: true,
