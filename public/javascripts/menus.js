@@ -2,45 +2,21 @@ if (typeof Menus === "undefined") {
   Menus = {};
 }
 
-var actionRoot = {
-  text: "Actions",
+var missionsRoot = {
+  text: "Missions",
   items: [{
-    text: "Attack",
-    items: [{
-      text: "Launch Missile",
-      leaf: true
-    },{
-      text: "Place Mine",
-      leaf: true
-    },{
-      text: "Kamikaze",
-      leaf: true
-    }]
-  },{
-    text: "Defend",
-    items: [{
-      text: "Take Cover",
-      leaf: true
-    },{
-      text: "Hide",
-      leaf: true
-    }]
-  },{
-    text: "Missions",
-    items: [{
-      text: "This page will list all the missions including your current mission",
-      leaf: true
-    }]
+    text: "This page will list all the missions including your current mission",
+    leaf: true
   }]
 };
-Ext.regModel("ActionItem", {
+Ext.regModel("MissionsItem", {
   fields: [
     { name: "text", type: "string" }
   ]
 });
-Menus.actionStore = new Ext.data.TreeStore({
-  model: "ActionItem",
-  root: actionRoot,
+Menus.missionsStore = new Ext.data.TreeStore({
+  model: "MissionsItem",
+  root: missionsRoot,
   proxy: {
     type: "memory",
     reader: {

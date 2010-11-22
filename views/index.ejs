@@ -55,22 +55,22 @@ Ext.setup({
     var tabpanel;
     var onTap = function(subList, subIdx, el, e, detailCard) {
       var ds = subList.getStore(), r  = ds.getAt(subIdx);
-      if ("Launch Missile" === r.get('text')) {
-        tabpanel.setActiveItem(world);
-      }
+      //if ("Launch Missile" === r.get('text')) {
+      //  tabpanel.setActiveItem(world);
+      //}
       //overlay.setCentered(false);
       //overlayTb.setTitle(subIdx + ': ' + r.get('text'));
       //overlay.showBy(el);
     };
 
-    var actions = new Ext.NestedList({
-      title: "Actions",
+    var missions = new Ext.NestedList({
+      title: "Missions",
       iconCls: "settings",
       displayField: "text",
       getItemTextTpl: function(node) {return "<img src='http://www1.eveinfo.com/img/icons/64_64/icon13_04.png'>{text}";},
-      store: Menus.actionStore
+      store: Menus.missionsStore
     });
-    actions.on('leafitemtap', onTap);
+    missions.on('leafitemtap', onTap);
     var shop = new Ext.NestedList({
       title: "Shop",
       iconCls: "settings",
@@ -85,6 +85,11 @@ Ext.setup({
       store: Menus.teamStore
     });
     team.on('leafitemtap', onTap);
+
+    var topHandler = function(button, event) {
+      alert(button.text);
+    };
+
     tabpanel = new Ext.TabPanel({
       fullscreen: true,
       tabBar: {
@@ -95,11 +100,29 @@ Ext.setup({
       },
       items: [
         world,
-        actions,
+        missions,
         shop,
         team,
         { iconCls: "user", title: "Profile" }
-      ]
+      ],
+      dockedItems: [{
+        xtype: 'toolbar',
+        dock: 'top',
+        layout: {
+          pack: 'center'
+        },
+        items: [{
+          xtype: 'segmentedbutton',
+          allowDepress: true,
+          items: [{
+            text: 'Attack',
+            handler: topHandler
+          }, {
+            text: 'Defense',
+            handler: topHandler
+          }]
+        }]
+      }]
     });
   }
 });
