@@ -24,10 +24,80 @@ Ext.setup({
   phoneStartupScreen: '/images/phone_startup.jpeg',
   glossOnIcon: true,
   onReady: function() {
-    var customMap = new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"});
-    var world = new Ext.Map({
-      iconCls: 'search',
-      title: 'World',
+    var tabpanel, target, weapon, worldMap, worldTopbar;
+
+    var topHandler = function(button, event) {
+      var overlayTitle = new Ext.Toolbar({
+        dock: 'top',
+        title: 'DEFAULT_TITLE'
+      });
+      var overlay = new Ext.Panel({
+        floating: true,
+        modal: true,
+        centered: true,
+        width: 260,
+        height: 260,
+        styleHtmlContent: true,
+        dockedItems: overlayTitle,
+        html: "Tap where you want to launch a missile or place a mine"
+      });
+      overlayTitle.setTitle(button.text);
+      overlay.show('pop');
+
+      google.maps.event.addListener(worldMap.map, "click", function(event) {
+        if (target) {
+          target.setMap(null);
+        }
+        target = new google.maps.Marker({
+          position: event.latLng,
+          map: worldMap.map,
+          title: "Target",
+          icon: new google.maps.MarkerImage(
+            "/images/crosshairs.png", // TODO(jeff): crosshairs.png is not exactly a symetrical icon
+            new google.maps.Size(41, 41),
+            new google.maps.Point(0, 0),
+            new google.maps.Point(21, 21)
+          )
+        });
+        weapon.show();
+        worldTopbar.doLayout();
+      });
+    };
+
+    weapon = new Ext.SegmentedButton({
+      xtype: 'segmentedbutton',
+      allowDepress: true,
+      hidden: true,
+      items: [{
+        text: 'Missile',
+        ui: 'action',
+        handler: topHandler
+      }, {
+        text: 'Landmine',
+        ui: 'action',
+        handler: topHandler
+      }]
+    });
+
+    worldTopbar = new Ext.Toolbar({
+      dock: 'top',
+      items: [{
+        xtype: 'segmentedbutton',
+        allowDepress: true,
+        items: [{
+          text: 'Attack',
+          handler: topHandler
+        }, {
+          text: 'Defense',
+          handler: topHandler
+        }]
+      }, {
+        xtype: 'spacer'
+      },
+      weapon]
+    });
+
+    worldMap = new Ext.Map({
       mapOptions: {
         navigationControl: false,
         zoom: 13,
@@ -37,22 +107,22 @@ Ext.setup({
       },
       listeners: {
         maprender: function(comp, map) {
-          map.mapTypes.set("customMap", customMap);
+          map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
         }
       }
     });
-/*
-    var overlay = new Ext.Panel({
-      floating: true,
-      modal: true,
-      centered: false,
-      width: 260,
-      height: 220,
-      dockedItems: new Ext.Toolbar({dock: 'top'}),
-      html: 'test',
+
+    var world = new Ext.Panel({
+      iconCls: 'search',
+      title: 'World',
+      items: [
+        worldMap
+      ],
+      dockedItems: [
+        worldTopbar
+      ]
     });
-*/
-    var tabpanel;
+
     var onTap = function(subList, subIdx, el, e, detailCard) {
       var ds = subList.getStore(), r  = ds.getAt(subIdx);
       //if ("Launch Missile" === r.get('text')) {
@@ -86,9 +156,6 @@ Ext.setup({
     });
     team.on('leafitemtap', onTap);
 
-    var topHandler = function(button, event) {
-      alert(button.text);
-    };
 
     tabpanel = new Ext.TabPanel({
       fullscreen: true,
@@ -104,25 +171,7 @@ Ext.setup({
         shop,
         team,
         { iconCls: "user", title: "Profile" }
-      ],
-      dockedItems: [{
-        xtype: 'toolbar',
-        dock: 'top',
-        layout: {
-          pack: 'center'
-        },
-        items: [{
-          xtype: 'segmentedbutton',
-          allowDepress: true,
-          items: [{
-            text: 'Attack',
-            handler: topHandler
-          }, {
-            text: 'Defense',
-            handler: topHandler
-          }]
-        }]
-      }]
+      ]
     });
   }
 });
