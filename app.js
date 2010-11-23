@@ -32,6 +32,7 @@ app.configure('production', function(){
 
 // Routes
 
+/*
 function renderAll(res, missileResults, sessionId) {
   models.Player.prototype.all(function(err, playerResults) {
     res.render('index.ejs', {
@@ -46,7 +47,7 @@ function renderAll(res, missileResults, sessionId) {
       }
     });
   });
-}
+}*/
 
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -58,6 +59,7 @@ function nameGenerator() {
   return "Agent" + randomItem(firstWord) + randomItem(secondWord);
 }
 
+/*
 app.get('/', function(req, res){
   models.Missile.prototype.all(function(err, missileResults) {
     if (!req.session.id) {
@@ -71,12 +73,13 @@ app.get('/', function(req, res){
     }
   });
 });
+*/
 
 // Only listen on $ node app.js
 if (!module.parent) {
   app.listen(80);
   console.log("Express server listening on port %d", app.address().port)
-  models.clearDb();
+  models.clearDb(); // TODO(Jeff): remove this in production version
   models.initializeDb();
 }
 
@@ -85,9 +88,23 @@ if (!module.parent) {
 // TODO(jeff): why does it say the conection is ready twice?
 var socket = io.listen(app);
 socket.on('connection', function(client) {
-  console.log('socket.io connection');
+  console.log('socket.io connection: ' + client.sessionId);
   client.on('message', function(obj) {
-    console.log(util.inspect(obj));
+    console.log("message: " + util.inspect(obj));
+    if (obj.e == "init") {
+      var p = new models.Player(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa), function(err, docs) {
+        // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
+        models.Missile.prototype.all(function(err, missileResults) {
+          models.Player.prototype.all(function(err, playerResults) {
+            client.send({ missiles: missileResults, players: playerResults });
+            console.log({ missiles: missileResults, players: playerResults });
+          });
+        });
+      });
+    } else if (obj.e == "m1") {
+      var m = new models.Missile(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa)); // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
+    } else if (obj.e == "move") {
+    }
   });
   client.on('disconnect', function() {
     console.log('socket.io disconnect');

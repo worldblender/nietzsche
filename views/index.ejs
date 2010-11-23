@@ -5,48 +5,42 @@
 <title><%= APP_NAME %></title>
 
 <!-- Sencha Touch CSS -->
-<link rel="stylesheet" href="/stylesheets/sencha-touch-debug.css" type="text/css">
+<link rel="stylesheet" href="/stylesheets/sencha-touch.css" type="text/css">
 
 <!-- Google Maps JS -->
 <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 
 <!-- Sencha Touch JS -->
-<script type="text/javascript" src="/javascripts/sencha-touch-debug-w-comments.js"></script>
+<script type="text/javascript" src="/javascripts/sencha-touch.js"></script>
+
+<script type="text/javascript" src="/socket.io/socket.io.js"></script> 
 
 <script type="text/javascript" src="/javascripts/mapStyles.js"></script>
 
 <script type="text/javascript" src="/javascripts/menus.js"></script>
 
 <script type="text/javascript">
+var socket = new io.Socket(); 
+socket.connect();
+socket.on('message', function(obj) {
+  alert(obj);
+}); 
+
+var tabpanel, target, weapon, worldMap, worldTopbar, initialLocation;
+
 Ext.setup({
   icon: '/images/icon.png',
   tabletStartupScreen: '/images/tablet_startup.png',
   phoneStartupScreen: '/images/phone_startup.jpeg',
   glossOnIcon: true,
   onReady: function() {
-    var tabpanel, target, weapon, worldMap, worldTopbar;
 
     var topHandler = function(button, event) {
-      var overlayTitle = new Ext.Toolbar({
-        dock: 'top',
-        title: 'DEFAULT_TITLE'
-      });
-      var overlay = new Ext.Panel({
-        floating: true,
-        modal: true,
-        centered: true,
-        width: 260,
-        height: 260,
-        styleHtmlContent: true,
-        dockedItems: overlayTitle,
-        html: "Tap where you want to launch a missile or place a landmine"
-      });
-      overlayTitle.setTitle(button.text);
-      overlay.show('pop');
+      Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine", Ext.emptyFn);
 
       google.maps.event.addListener(worldMap.map, "click", function(event) {
         if (target) {
-          target.setMap(null);
+          target.setMap(null); // clear previous marker
         }
         target = new google.maps.Marker({
           position: event.latLng,
@@ -100,6 +94,7 @@ Ext.setup({
     worldMap = new Ext.Map({
       mapOptions: {
         navigationControl: false,
+        center: initialLocation,
         zoom: 13,
         mapTypeId: "customMap",
         mapTypeControl: false,
@@ -125,12 +120,7 @@ Ext.setup({
 
     var onTap = function(subList, subIdx, el, e, detailCard) {
       var ds = subList.getStore(), r  = ds.getAt(subIdx);
-      //if ("Launch Missile" === r.get('text')) {
-      //  tabpanel.setActiveItem(world);
-      //}
-      //overlay.setCentered(false);
-      //overlayTb.setTitle(subIdx + ': ' + r.get('text'));
-      //overlay.showBy(el);
+      alert(r.get('text'));
     };
 
     var missions = new Ext.NestedList({
@@ -138,23 +128,23 @@ Ext.setup({
       iconCls: "favorites",
       displayField: "text",
       getItemTextTpl: function(node) {return "<img src='http://www1.eveinfo.com/img/icons/64_64/icon13_04.png'>{text}";},
-      store: Menus.missionsStore
+      store: Menus.missionsStore,
+      listeners: { leafitemtap: onTap }
     });
-    missions.on('leafitemtap', onTap);
     var shop = new Ext.NestedList({
       title: "Shop",
       iconCls: "settings",
       displayField: "text",
-      store: Menus.shopStore
+      store: Menus.shopStore,
+      listeners: { leafitemtap: onTap }
     });
-    shop.on('leafitemtap', onTap);
     var team = new Ext.NestedList({
       title: "Team",
       iconCls: "team",
       displayField: "text",
-      store: Menus.teamStore
+      store: Menus.teamStore,
+      listeners: { leafitemtap: onTap }
     });
-    team.on('leafitemtap', onTap);
 
     tabpanel = new Ext.TabPanel({
       fullscreen: true,
@@ -175,6 +165,18 @@ Ext.setup({
   }
 });
 
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(function(position) {
+    initialLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+    //if (position.coords.accuracy > 500)
+    //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
+    if (worldMap)
+      worldMap.map.setCenter(initialLocation);
+    socket.send({ e: "init", loc: initialLocation });
+  }); // TODO(jeff): catch on error
+} else {
+  Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);
+}
 </script>
 
 </head>
