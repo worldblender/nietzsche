@@ -32,7 +32,7 @@ socket.on('message', function(obj) {
 
 function calcXP(aliveSince) {
   // TODO(jeff): getting the date on client side is not a good idea
-  return Math.floor(((serverTimeDiff + new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
+  return Math.floor((serverTimeDiff + (new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
 }
 
 function drawPlayer(i) {
@@ -56,12 +56,15 @@ function drawPlayer(i) {
 }
 
 function drawMissile(i) {
+  if (allMissiles[i] === null)
+    return;
+  var missileProgress = ((serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime));
+  if (missileProgress > 1 || missileProgress < 0)
+    return;
   var missileLine = [new google.maps.LatLng(allMissiles[i].departureCoords.lat,
                                             allMissiles[i].departureCoords.long),
-                     new google.maps.LatLng(allMissiles[i].departureCoords.lat + (allMissiles[i].arrivalCoords.lat - allMissiles[i].departureCoords.lat) *
-                                              (serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime),
-                                            allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) *
-                                              (serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime))];
+                     new google.maps.LatLng(allMissiles[i].departureCoords.lat + (allMissiles[i].arrivalCoords.lat - allMissiles[i].departureCoords.lat) * missileProgress,
+                                            allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) * missileProgress)];
   if (allMissiles[i].line) {
     allMissiles[i].line.setPath(missileLine);
   } else {
@@ -273,6 +276,35 @@ if (navigator.geolocation) {
 }
 
 tick = function() {
-  for (var i = 0; i < allMissiles.length; ++i)
+  for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
+    if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you populate the world
+      var c = new google.maps.Circle({
+        center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long),
+        fillColor: "#00FFFF",
+        fillOpacity: 0.5,
+        strokeColor: "#00FFFF",
+        map: worldMap.map,
+        radius: 0
+      });
+      var r = 0;
+      var intvl = setInterval(function() {
+        if (r === 240) // TODO(jeff): make this radius actually the radius of damage
+          r--;
+        else if (r === 5) {
+          clearInterval(intvl);
+          c.setMap(null);
+          return;
+        }
+        else if (r % 2 === 0)
+          r += 6;
+        else
+          r -= 6;
+        c.setRadius(r);
+      }, 50);
+      allMissiles[i].line.setMap(null);
+      allMissiles[i] = null;
+      // TODO(jeff): need to sync to calc damages
+    }
+  }
 }

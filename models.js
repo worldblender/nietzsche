@@ -100,7 +100,7 @@ exports.Player.prototype.all = function(callback) {
 }
 
 exports.Missile.prototype.all = function(callback) {
-  db.missiles.find(function(err, cursor) {
+  db.missiles.find({arrivalTime: {$gt: (new Date()).getTime()}}, function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);
     });
