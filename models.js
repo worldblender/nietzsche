@@ -53,9 +53,10 @@ exports.Player = function(username, coords, callback) {
   this.items = { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 };
   this.aliveSince = (new Date()).getTime() + 0.01;
   db.players.insert(this, callback);
+  return this;
 }
 
-exports.Missile = function(username, arrivalCoords) {
+exports.Missile = function(username, arrivalCoords, callback) {
   var m = this;
   m.owner = username;
   m.departureTime = (new Date()).getTime() + 0.01; // hack of adding 0.01 to force storing in mongodb as float, so that util.inspect will read it out properly
@@ -79,6 +80,7 @@ exports.Missile = function(username, arrivalCoords) {
           document.items.m.m[i] = docs[0]._id;
           db.players.save(document, noCallback);
         });
+        callback(m);
         break; // found an available missile slot and used it, stop looking
       }
     }

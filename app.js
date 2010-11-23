@@ -35,6 +35,24 @@ if (!module.parent) {
   models.initializeDb();
 }
 
+function sync(client) {
+  // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
+  models.Missile.prototype.all(function(err, missileResults) {
+    models.Player.prototype.all(function(err, playerResults) {
+      var currentPlayer;
+      for (var i = 0; i < playerResults.length; ++i) {
+        if (playerResults[i]._id === client.sessionId) {
+          //console.log("current player is index: " + i);
+          currentPlayer = i;
+          break;
+        }
+      }
+      client.send({ e: "sync", missiles: missileResults, players: playerResults, youIndex: currentPlayer });
+      console.log({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
+    });
+  });
+}
+
 // socket.io
 // TODO(jeff): compress/pack the socket.io .js file
 // TODO(jeff): why does it say the conection is ready twice?
@@ -45,24 +63,15 @@ socket.on('connection', function(client) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
       var p = new models.Player(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa), function(err, docs) {
-        // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
-        models.Missile.prototype.all(function(err, missileResults) {
-          models.Player.prototype.all(function(err, playerResults) {
-            var currentPlayer;
-            for (var i = 0; i < playerResults.length; ++i) {
-              if (playerResults[i]._id === client.sessionId) {
-                //console.log("current player is index: " + i);
-                currentPlayer = i;
-                break;
-              }
-            }
-            client.send({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
-            console.log({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
-          });
-        });
+        sync(client);
       });
+      client.broadcast({e: "player", player: p}, client.sessionId); // tell everyone else I am here. TODO(jeff): check if I can just remove the second parameter because it doesn't send to yourself anyway
     } else if (obj.e === "m") {
-      var m = new models.Missile(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa)); // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
+      // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
+      new models.Missile(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa), function(m) {
+        client.broadcast({e: "missile", missile: m});
+        client.send({e: "missile", missile: m});
+      });
     } else if (obj.e === "move") {
     }
   });

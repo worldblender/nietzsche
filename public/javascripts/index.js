@@ -4,20 +4,28 @@ var socket = new io.Socket();
 
 socket.connect();
 socket.on('message', function(obj) {
-  allPlayers = obj.players;
-  allMissiles = obj.missiles;
-  you.index = obj.youIndex;
-  var inactiveMissiles = 0;
-  for (var i = 0; i < allPlayers[you.index].items.m.m.length; ++i) {
-    if (allPlayers[you.index].items.m.m[i] === null) {
-      inactiveMissiles++;
+  if (obj.e === "sync") {
+    allPlayers = obj.players;
+    allMissiles = obj.missiles;
+    you.index = obj.youIndex;
+    var inactiveMissiles = 0;
+    for (var i = 0; i < allPlayers[you.index].items.m.m.length; ++i) {
+      if (allPlayers[you.index].items.m.m[i] === null) {
+        inactiveMissiles++;
+      }
     }
+    you.inactiveMissiles = inactiveMissiles;
+    if (inactiveMissiles === 0)
+      missileButton.disable(true);
+    if (worldMap)
+      populateMap();
+  } else if (obj.e === "player") {
+    var len = allPlayers.push(obj.player);
+    drawPlayer(len-1);
+  } else if (obj.e === "missile") {
+    var len = allMissiles.push(obj.missile);
+    drawMissile(len-1);
   }
-  you.inactiveMissiles = inactiveMissiles;
-  if (inactiveMissiles === 0)
-    missileButton.disable(true);
-  if (worldMap)
-    populateMap();
 });
 
 function calcXP(aliveSince) {
@@ -25,22 +33,61 @@ function calcXP(aliveSince) {
   return Math.floor(((new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
 }
 
+function drawPlayer(i) {
+  var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.long);
+  var pmarker = new google.maps.Marker({
+    position: plocation,
+    map: worldMap.map,
+    title: allPlayers[i]._id,
+    icon: new google.maps.MarkerImage(
+      "/images/soldier.png", 
+      new google.maps.Size(24, 24),
+      new google.maps.Point(0, 0),
+      new google.maps.Point(12, 12)
+    )
+  });
+  allPlayers[i].marker = pmarker;
+  pmarker.info = allPlayers[i];
+  google.maps.event.addListener(pmarker, 'click', function() {
+    Ext.Msg.alert("Agent " + this.info._id, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
+  });
+}
+
+function drawMissile(i) {
+  var missileLine = [new google.maps.LatLng(allMissiles[i].departureCoords.lat,
+                                            allMissiles[i].departureCoords.long),
+                     new google.maps.LatLng(allMissiles[i].departureCoords.lat + (allMissiles[i].arrivalCoords.lat - allMissiles[i].departureCoords.lat) *
+                                              ((new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime),
+                                            allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) *
+                                              ((new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime))];
+  var missilePath = new google.maps.Polyline({
+    //path: [new google.maps.LatLng(allMissiles[i].departureCoords.lat, allMissiles[i].departureCoords.long),
+    //       new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long)],
+    path: missileLine,
+    strokeColor: "#FF0000",
+    strokeOpacity: 1.0,
+    strokeWeight: 2
+  });
+  missilePath.setMap(worldMap.map);
+}
+
 populateMap = function() {
   for (var i = 0; i < allPlayers.length; ++i) {
-    var icon = "/images/soldier.png";
-    var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.long);
-    var pmarker = new google.maps.Marker({
-      position: plocation,
-      map: worldMap.map,
-      title: allPlayers[i]._id,
-      icon: icon
-    });
-    allPlayers[i].marker = pmarker;
-    pmarker.info = allPlayers[i];
-    google.maps.event.addListener(pmarker, 'click', function() {
-      Ext.Msg.alert("Agent " + this.info._id, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
-    });
+    drawPlayer(i);
   }
+  for (var i = 0; i < allMissiles.length; ++i) {
+    drawMissile(i);
+  }
+
+  navigator.geolocation.watchPosition(function(position) {
+    if (you.location.sa === position.coords.latitude && you.location.ta === position.coords.longitude)
+      return; // no actual change in location
+    you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+    socket.send({ e: "move", loc: you.location });
+    allPlayers[you.index].coords.lat = position.coords.latitude;
+    allPlayers[you.index].coords.long = position.coords.longitude;
+    allPlayers[you.index].marker.setPosition(you.location);
+  });
 }
 
 Ext.setup({
@@ -76,15 +123,14 @@ Ext.setup({
             map: worldMap.map,
             title: "Target",
             icon: new google.maps.MarkerImage(
-              "/images/crosshairs.png", // TODO(jeff): crosshairs.png is not exactly a symetrical icon
-              new google.maps.Size(41, 41),
+              "/images/crosshairs.png",
+              new google.maps.Size(40, 40),
               new google.maps.Point(0, 0),
-              new google.maps.Point(21, 21)
+              new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
             )
           });
           missileButton.show();
           landmineButton.show();
-          //worldTopbar.doLayout();
         });
       } else {
         missileButton.hide();
@@ -214,16 +260,7 @@ if (navigator.geolocation) {
     if (worldMap)
       worldMap.map.setCenter(you.location);
     socket.send({ e: "init", loc: you.location });
-    navigator.geolocation.watchPosition(function(position) {
-      if (you.location.sa === position.coords.latitude && you.location.ta === position.coords.longitude)
-        return; // no actual change in location
-      you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-      socket.send({ e: "move", loc: you.location });
-      allPlayers[you.index].coords.lat = position.coords.latitude;
-      allPlayers[you.index].coords.long = position.coords.longitude;
-      allPlayers[you.index].marker.setPosition(you.location);
-    });
-  }); // TODO(jeff): catch on error
+  }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);
 }
