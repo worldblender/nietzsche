@@ -12,7 +12,7 @@ LANDMINE_RADIUS = 200; // in meters
 LANDMINE_DAMAGE = 20;
 MISSILE_RADIUS = 400; // in meters
 MISSILE_DAMAGE = 40;
-MISSILE_VELOCITY = 200; // TODO(jeff): 2 is the value we'll have in production
+MISSILE_VELOCITY = 20; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.00868;
 
 // physical constants

@@ -27,22 +27,6 @@ function nameGenerator() {
   return "Agent" + randomItem(firstWord) + randomItem(secondWord);
 }
 
-/*
-app.get('/', function(req, res){
-  models.Missile.prototype.all(function(err, missileResults) {
-    if (!req.session.id) {
-      var newSessionId = nameGenerator();
-      var p = new models.Player(newSessionId, new models.Coords(0, 0), function(err, docs) {
-        req.session.id = newSessionId;
-        renderAll(res, missileResults, req.session.id);
-      });
-    } else {
-      renderAll(res, missileResults, req.session.id);
-    }
-  });
-});
-*/
-
 // Only listen on $ node app.js
 if (!module.parent) {
   app.listen(80);
