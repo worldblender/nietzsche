@@ -1,10 +1,11 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff;
 var you = [];
 var socket = new io.Socket(); 
 
 socket.connect();
 socket.on('message', function(obj) {
   if (obj.e === "sync") {
+    serverTimeDiff = obj.time - (new Date()).getTime();
     allPlayers = obj.players;
     allMissiles = obj.missiles;
     you.index = obj.youIndex;
@@ -30,7 +31,7 @@ socket.on('message', function(obj) {
 
 function calcXP(aliveSince) {
   // TODO(jeff): getting the date on client side is not a good idea
-  return Math.floor(((new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
+  return Math.floor(((serverTimeDiff + new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
 }
 
 function drawPlayer(i) {
@@ -57,9 +58,9 @@ function drawMissile(i) {
   var missileLine = [new google.maps.LatLng(allMissiles[i].departureCoords.lat,
                                             allMissiles[i].departureCoords.long),
                      new google.maps.LatLng(allMissiles[i].departureCoords.lat + (allMissiles[i].arrivalCoords.lat - allMissiles[i].departureCoords.lat) *
-                                              ((new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime),
+                                              (serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime),
                                             allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) *
-                                              ((new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime))];
+                                              (serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime))];
   var missilePath = new google.maps.Polyline({
     //path: [new google.maps.LatLng(allMissiles[i].departureCoords.lat, allMissiles[i].departureCoords.long),
     //       new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long)],

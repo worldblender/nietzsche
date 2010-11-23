@@ -47,7 +47,7 @@ function sync(client) {
           break;
         }
       }
-      client.send({ e: "sync", missiles: missileResults, players: playerResults, youIndex: currentPlayer });
+      client.send({ e: "sync", missiles: missileResults, players: playerResults, youIndex: currentPlayer, time: (new Date()).getTime() });
       console.log({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
     });
   });
