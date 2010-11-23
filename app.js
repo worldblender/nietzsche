@@ -72,8 +72,8 @@ socket.on('connection', function(client) {
                 break;
               }
             }
-            client.send({ missiles: missileResults, players: playerResults, currentPlayer: currentPlayer });
-            console.log({ missiles: missileResults, players: playerResults, currentPlayer: currentPlayer });
+            client.send({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
+            console.log({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
           });
         });
       });

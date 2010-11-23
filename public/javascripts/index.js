@@ -1,10 +1,21 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, initialLocation, allPlayers, allMissiles, populateMap;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap;
+var you = [];
 var socket = new io.Socket(); 
 
 socket.connect();
 socket.on('message', function(obj) {
   allPlayers = obj.players;
   allMissiles = obj.missiles;
+  you.index = obj.youIndex;
+  var inactiveMissiles = 0;
+  for (var i = 0; i < allPlayers[you.index].items.m.m.length; ++i) {
+    if (allPlayers[you.index].items.m.m[i] === null) {
+      inactiveMissiles++;
+    }
+  }
+  you.inactiveMissiles = inactiveMissiles;
+  if (inactiveMissiles === 0)
+    missileButton.disable(true);
   if (worldMap)
     populateMap();
 });
@@ -40,10 +51,13 @@ Ext.setup({
   onReady: function() {
 
     var launchMissile = function(button, event) {
-      var missileMsg = "You are about to launch a missile to a target that is TODO meters away. This will take TODO time, and you will have TODO missiles remaining if you continue. Continue launch?";
+      var missileMsg = "This target is TODO meters (TODO time) away. You will have " + you.inactiveMissiles + " inactive missiles remaining. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
           socket.send({ e: "m", loc: target.getPosition() });
+          you.inactiveMissiles--;
+          if (you.inactiveMissiles === 0)
+            missileButton.disable(true);
           // I considered resetting the worldTopbar but maybe users will want to launch multiple missiles at once
         }
       });
@@ -118,7 +132,7 @@ Ext.setup({
     worldMap = new Ext.Map({
       mapOptions: {
         navigationControl: false,
-        center: initialLocation,
+        center: you.location,
         zoom: 13,
         mapTypeId: "customMap",
         mapTypeControl: false,
@@ -193,12 +207,22 @@ Ext.setup({
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(position) {
-    initialLocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+    you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+    // there is occasionally a weird display bug for this alert
     //if (position.coords.accuracy > 500)
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
-      worldMap.map.setCenter(initialLocation);
-    socket.send({ e: "init", loc: initialLocation });
+      worldMap.map.setCenter(you.location);
+    socket.send({ e: "init", loc: you.location });
+    navigator.geolocation.watchPosition(function(position) {
+      if (you.location.sa === position.coords.latitude && you.location.ta === position.coords.longitude)
+        return; // no actual change in location
+      you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+      socket.send({ e: "move", loc: you.location });
+      allPlayers[you.index].coords.lat = position.coords.latitude;
+      allPlayers[you.index].coords.long = position.coords.longitude;
+      allPlayers[you.index].marker.setPosition(you.location);
+    });
   }); // TODO(jeff): catch on error
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);
