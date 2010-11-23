@@ -12,7 +12,7 @@
 <script type="text/javascript" src="/javascripts/menus.js"></script>
 
 <script type="text/javascript">
-var tabpanel, target, weapon, worldMap, worldTopbar, initialLocation, allPlayers, allMissiles, populateMap;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, initialLocation, allPlayers, allMissiles, populateMap;
 var socket = new io.Socket(); 
 
 socket.connect();
@@ -54,14 +54,14 @@ Ext.setup({
   onReady: function() {
 
     var launchMissile = function(button, event) {
-      socket.send({e: "m1", loc: target.getPosition() });
+      socket.send({ e: "m", loc: target.getPosition() });
     };
 
     var attackToggle = function(t, button, pressed) {
       if (button.text == "Attack" && pressed) {
         Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine", Ext.emptyFn);
 
-        google.maps.event.addListener(worldMap.map, "click", function(event) {
+        targetListener = google.maps.event.addListener(worldMap.map, "click", function(event) {
           if (target) {
             target.setMap(null); // clear previous marker
           }
@@ -76,30 +76,33 @@ Ext.setup({
               new google.maps.Point(21, 21)
             )
           });
-          weapon.show();
-          worldTopbar.doLayout();
+          missileButton.show();
+          landmineButton.show();
+          //worldTopbar.doLayout();
         });
       } else {
-        weapon.hide();
+        missileButton.hide();
+        landmineButton.hide();
         if (target) {
           target.setMap(null);
+        }
+        if (targetListener) {
+          google.maps.event.removeListener(targetListener);
+          targetListener = null;
         }
       }
     };
 
-    weapon = new Ext.SegmentedButton({
-      xtype: 'segmentedbutton',
-      allowDepress: true,
+    missileButton = new Ext.Button({
+      text: 'Missile',
+      ui: 'action',
       hidden: true,
-      items: [{
-        text: 'Missile',
-        ui: 'action',
-        handler: launchMissile
-      }, {
-        text: 'Landmine',
-        ui: 'action',
-        //handler: topHandler
-      }]
+      handler: launchMissile
+    });
+    landmineButton = new Ext.Button({
+      text: 'Landmine',
+      hidden: true,
+      ui: 'action'
     });
 
     worldTopbar = new Ext.Toolbar({
@@ -116,7 +119,8 @@ Ext.setup({
       }, {
         xtype: 'spacer'
       },
-      weapon]
+      missileButton,
+      landmineButton]
     });
 
     worldMap = new Ext.Map({

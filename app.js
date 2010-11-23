@@ -14,40 +14,8 @@ var models = require('./models');
 // Configuration
 
 app.configure(function(){
-  app.set('views', __dirname + '/views');
-  app.use(express.bodyDecoder());
-  app.use(express.methodOverride());
-  app.use(app.router);
   app.use(express.staticProvider(__dirname + '/public'));
-  app.set('view options', { layout: false });
 });
-
-app.configure('development', function(){
-  app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
-});
-
-app.configure('production', function(){
-  app.use(express.errorHandler()); 
-});
-
-// Routes
-
-/*
-function renderAll(res, missileResults, sessionId) {
-  models.Player.prototype.all(function(err, playerResults) {
-    res.render('index.ejs', {
-      locals: {
-        MISSILE_RADIUS: MISSILE_RADIUS,
-        MISSILE_VELOCITY: MISSILE_VELOCITY,
-        MISSILE_ACCELERATION: MISSILE_ACCELERATION,
-        APP_NAME: APP_NAME,
-        players: util.inspect(playerResults),
-        missiles: util.inspect(missileResults),
-        current_user: sessionId
-      }
-    });
-  });
-}*/
 
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -91,7 +59,7 @@ socket.on('connection', function(client) {
   console.log('socket.io connection: ' + client.sessionId);
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
-    if (obj.e == "init") {
+    if (obj.e === "init") {
       var p = new models.Player(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa), function(err, docs) {
         // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
         models.Missile.prototype.all(function(err, missileResults) {
@@ -101,9 +69,9 @@ socket.on('connection', function(client) {
           });
         });
       });
-    } else if (obj.e == "m1") {
+    } else if (obj.e === "m") {
       var m = new models.Missile(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa)); // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
-    } else if (obj.e == "move") {
+    } else if (obj.e === "move") {
     }
   });
   client.on('disconnect', function() {

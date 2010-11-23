@@ -8,7 +8,10 @@ var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, 
 
 // global configs
 INITIAL_HP = 100;
-MISSILE_RADIUS = 300; // in meters
+LANDMINE_RADIUS = 200; // in meters
+LANDMINE_DAMAGE = 20;
+MISSILE_RADIUS = 400; // in meters
+MISSILE_DAMAGE = 40;
 MISSILE_VELOCITY = 200; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.00868;
 
@@ -47,28 +50,38 @@ exports.Player = function(username, coords, callback) {
   this._id = username; // TODO(jeff): check uniqueness
   this.hp = INITIAL_HP;
   this.coords = coords; // TODO(jeff): check validity
-  this.items = {'m1': (new Date()).getTime() - 0.01, 'h1': 1, 'coins': 5}; // items are things you have. m1 is your primary missile, h1 is a health pack. the value is the time when you can use it again (for missiles), or how many you have (coins, health pack)
+  this.items = { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 };
   this.aliveSince = (new Date()).getTime() + 0.01;
   db.players.insert(this, callback);
 }
 
 exports.Missile = function(username, arrivalCoords) {
-  this.owner = username;
   var m = this;
+  m.owner = username;
   m.departureTime = (new Date()).getTime() + 0.01; // hack of adding 0.01 to force storing in mongodb as float, so that util.inspect will read it out properly
   m.arrivalCoords = arrivalCoords; // TODO(jeff): check validity
   db.players.findOne({_id: username}, function(err, document) {
+    //console.log("missile being launched by: " + username);
     // TODO(jeff): check for error
-    m.departureCoords = document.coords;
+    // TODO(jeff): another race condition here. player launching 2 missiles at the same time might get them both launched
+    for (var i = 0; i < document.items.m.m.length; i++) {
+      if (document.items.m.m[i] == null) {
+        m.departureCoords = document.coords;
 
-    var distance = haversineDistance(m.arrivalCoords, m.departureCoords);
-    var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-    m.arrivalTime = m.departureTime + duration * 1000;
+        var distance = haversineDistance(m.arrivalCoords, m.departureCoords);
+        var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
+        m.arrivalTime = m.departureTime + duration * 1000;
 
-    db.missiles.insert(m, function(err, docs) {
-      //console.log("lauched missile; " + printObject(m));
-      setTimeout(function() {missileArrived(docs[0]);}, m.arrivalTime - (new Date()).getTime());
-    });
+        db.missiles.insert(m, function(err, docs) {
+          //console.log("lauched missile; " + printObject(m));
+          setTimeout(function() {missileArrived(docs[0]);}, m.arrivalTime - (new Date()).getTime());
+          // put this id in there
+          document.items.m.m[i] = docs[0]._id;
+          db.players.save(document, noCallback);
+        });
+        break; // found an available missile slot and used it, stop looking
+      }
+    }
   });
 }
 
@@ -93,16 +106,24 @@ exports.Missile.prototype.all = function(callback) {
 }
 
 function missileArrived(missile) {
-  //console.log("missile has arrived: " + missile);
+  //console.log("missile has arrived: " + missile.arrivalCoords);
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
-  db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
-    for (var i = 0; i < result.documents[0].results.length; ++i) {
-      // TODO(jeff): race condition :-(   use findAndModify in the future
-      var obj = result.documents[0].results[i].obj;
-      var damage = Math.ceil(INITIAL_HP * (MISSILE_RADIUS - result.documents[0].results[i].dis * RAD_TO_METERS) / MISSILE_RADIUS);
-      obj.hp -= damage;
-      db.players.save(obj, noCallback);
+  db.players.findOne({_id: missile.owner}, function(err, document) {
+    for (var i = 0; i < document.items.m.m.length; ++i) {
+      if (document.items.m.m[i] !== null && missile._id.str === document.items.m.m[i].str) {
+        document.items.m.m[i] = null;
+        db.players.save(document, noCallback);
+      }
     }
+    db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
+      for (var i = 0; i < result.documents[0].results.length; ++i) {
+        // TODO(jeff): race condition :-(   use findAndModify in the future
+        var obj = result.documents[0].results[i].obj;
+        var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
+        obj.hp -= damage;
+        db.players.save(obj, noCallback);
+      }
+    });
   });
 }
 
@@ -111,7 +132,7 @@ exports.initializeDb = function() {
   db.collection('players', function(err, collection) {
     db.players = collection;
     // create players index
-    db.players.createIndex([['coords', '2d']], noCallback);
+    db.players.createIndex([['coords', '2d']], noCallback); //TODO(jeff): move these createIndex functions to some db reset method
   });
   db.collection('missiles', function(err, collection) {
     db.missiles = collection;
