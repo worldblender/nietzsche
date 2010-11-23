@@ -64,8 +64,16 @@ socket.on('connection', function(client) {
         // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
         models.Missile.prototype.all(function(err, missileResults) {
           models.Player.prototype.all(function(err, playerResults) {
-            client.send({ missiles: missileResults, players: playerResults });
-            console.log({ missiles: missileResults, players: playerResults });
+            var currentPlayer;
+            for (var i = 0; i < playerResults.length; ++i) {
+              if (playerResults[i]._id === client.sessionId) {
+                //console.log("current player is index: " + i);
+                currentPlayer = i;
+                break;
+              }
+            }
+            client.send({ missiles: missileResults, players: playerResults, currentPlayer: currentPlayer });
+            console.log({ missiles: missileResults, players: playerResults, currentPlayer: currentPlayer });
           });
         });
       });
