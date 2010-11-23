@@ -1,4 +1,4 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick;
 var you = [];
 var socket = new io.Socket(); 
 
@@ -20,6 +20,7 @@ socket.on('message', function(obj) {
       missileButton.disable(true);
     if (worldMap)
       populateMap();
+    setInterval(tick, 500);
   } else if (obj.e === "player") {
     var len = allPlayers.push(obj.player);
     drawPlayer(len-1);
@@ -61,15 +62,20 @@ function drawMissile(i) {
                                               (serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime),
                                             allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) *
                                               (serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime))];
-  var missilePath = new google.maps.Polyline({
-    //path: [new google.maps.LatLng(allMissiles[i].departureCoords.lat, allMissiles[i].departureCoords.long),
-    //       new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long)],
-    path: missileLine,
-    strokeColor: "#FF0000",
-    strokeOpacity: 1.0,
-    strokeWeight: 2
-  });
-  missilePath.setMap(worldMap.map);
+  if (allMissiles[i].line) {
+    allMissiles[i].line.setPath(missileLine);
+  } else {
+    var missilePath = new google.maps.Polyline({
+      //path: [new google.maps.LatLng(allMissiles[i].departureCoords.lat, allMissiles[i].departureCoords.long),
+      //       new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long)],
+      path: missileLine,
+      strokeColor: "#00FFFF",
+      strokeOpacity: 1.0,
+      strokeWeight: 2
+    });
+    missilePath.setMap(worldMap.map);
+    allMissiles[i].line = missilePath;
+  }
 }
 
 populateMap = function() {
@@ -264,4 +270,9 @@ if (navigator.geolocation) {
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);
+}
+
+tick = function() {
+  for (var i = 0; i < allMissiles.length; ++i)
+    drawMissile(i);
 }
