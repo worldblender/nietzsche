@@ -20,7 +20,7 @@ socket.on('message', function(obj) {
       missileButton.disable(true);
     if (worldMap)
       populateMap();
-    setInterval(tick, 500);
+    setInterval(tick, 900);
   } else if (obj.e === "player") {
     var len = allPlayers.push(obj.player);
     drawPlayer(len-1);
@@ -301,7 +301,7 @@ tick = function() {
         else
           r -= 6;
         c.setRadius(r);
-      }, 50);
+      }, 600);
       allMissiles[i].line.setMap(null);
       allMissiles[i] = null;
       // TODO(jeff): need to sync to calc damages

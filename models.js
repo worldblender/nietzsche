@@ -13,7 +13,7 @@ LANDMINE_DAMAGE = 20;
 MISSILE_RADIUS = 400; // in meters
 MISSILE_DAMAGE = 40;
 MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
-MISSILE_ACCELERATION = 0.00868;
+MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
 
 // physical constants
 var RAD_TO_METERS = 6371 * 1000;
