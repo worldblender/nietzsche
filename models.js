@@ -87,8 +87,12 @@ exports.Missile = function(username, arrivalCoords, callback) {
   });
 }
 
-exports.Player.prototype.move = function(newCoords) {
-  this.coords = newCoords; // TODO(jeff): check validity
+exports.move = function(sessionId, newLocation, client) {
+  // TODO(jeff): check validity of newLocation
+  db.players.findOne({_id: sessionId}, function(err, document) {
+    document.coords = newLocation;
+    db.players.save(document, noCallback);
+  });
 }
 
 exports.Player.prototype.all = function(callback) {

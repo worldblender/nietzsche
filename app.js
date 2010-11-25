@@ -74,6 +74,8 @@ socket.on('connection', function(client) {
         client.send({e: "missile", missile: m});
       });
     } else if (obj.e === "move") {
+      models.move(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa));
+      client.broadcast({player: client.sessionId, e: "moved", loc: obj.loc});
     }
   });
   client.on('disconnect', function() {

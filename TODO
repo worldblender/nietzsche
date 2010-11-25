@@ -1,10 +1,10 @@
 TODO:
-
 - run through jslint
 - compress javascript before production http://closure-compiler.appspot.com/
 - login system (facebook login, etc.)
 - server pushes to client when a missile explodes (need a sync)
-- implement moving
 - handle death
 - need iphone icon and screen
 - phonegap wrapper
+- graceful handling of socket disconnect
+- why don't some phones show your icon

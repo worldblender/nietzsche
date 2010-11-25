@@ -27,6 +27,17 @@ socket.on('message', function(obj) {
   } else if (obj.e === "missile") {
     var len = allMissiles.push(obj.missile);
     drawMissile(len-1);
+  } else if (obj.e === "moved") {
+    obj.loc
+    obj.player
+
+    for (var i = 0; i < allPlayers.length; ++i) { // TODO: should allPlayers be a dict instead of an array so our lookups are faster?
+      if (allPlayers[i]._id === obj.player) {
+        allPlayers[i].coords = obj.loc;
+        allPlayers[i].marker.setPosition(obj.loc);
+        break;
+      }
+    }
   }
 });
 
@@ -289,9 +300,9 @@ tick = function() {
       });
       var r = 0;
       var intvl = setInterval(function() {
-        if (r === 240) // TODO(jeff): make this radius actually the radius of damage
+        if (r >= 240) // TODO(jeff): make this radius actually the radius of damage
           r--;
-        else if (r === 5) {
+        else if (r <= 5) {
           clearInterval(intvl);
           c.setMap(null);
           return;
@@ -301,7 +312,7 @@ tick = function() {
         else
           r -= 6;
         c.setRadius(r);
-      }, 600);
+      }, 500);
       allMissiles[i].line.setMap(null);
       allMissiles[i] = null;
       // TODO(jeff): need to sync to calc damages
