@@ -90,6 +90,7 @@ exports.Missile = function(username, arrivalCoords, callback) {
 exports.move = function(sessionId, newLocation, client) {
   // TODO(jeff): check validity of newLocation
   db.players.findOne({_id: sessionId}, function(err, document) {
+    console.log(sessionId);
     document.coords = newLocation;
     db.players.save(document, noCallback);
   });

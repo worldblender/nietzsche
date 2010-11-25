@@ -6,5 +6,4 @@ TODO:
 - handle death
 - need iphone icon and screen
 - phonegap wrapper
-- graceful handling of socket disconnect
 - why don't some phones show your icon

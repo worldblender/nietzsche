@@ -2,7 +2,7 @@ var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, w
 var you = [];
 var socket = new io.Socket(); 
 
-socket.connect();
+socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
 socket.on('message', function(obj) {
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
@@ -40,6 +40,20 @@ socket.on('message', function(obj) {
     }
   }
 });
+socket.on('disconnect', function() {
+  setTimeout(connectLoop, 1000);
+});
+
+function connectLoop() {
+  if (socket.connected) {
+    socket.send({ e: "init", loc: you.location }); '' //TODO(jeff): temporary hack. should just reconnect to previous session
+    return;
+  } else {
+    setTimeout(connectLoop, 10000);
+    socket.connect();
+    Ext.Msg.alert('Disconnected', "Attempting to reconnect...", Ext.emptyFn);
+  }
+}
 
 function calcXP(aliveSince) {
   // TODO(jeff): getting the date on client side is not a good idea
@@ -77,7 +91,7 @@ function drawMissile(i) {
                      new google.maps.LatLng(allMissiles[i].departureCoords.lat + (allMissiles[i].arrivalCoords.lat - allMissiles[i].departureCoords.lat) * missileProgress,
                                             allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) * missileProgress)];
   if (allMissiles[i].line) {
-    allMissiles[i].line.setPath(missileLine);
+    allMissiles[i].line.setPath(missileLine); // TODO(jeff): the line is drawn off from the crosshair's center. is it because of the earth's spherical shape?
   } else {
     var missilePath = new google.maps.Polyline({
       //path: [new google.maps.LatLng(allMissiles[i].departureCoords.lat, allMissiles[i].departureCoords.long),
