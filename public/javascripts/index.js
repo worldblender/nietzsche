@@ -2,6 +2,22 @@ var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, w
 var you = [];
 var socket = new io.Socket();
 
+RAD_TO_METERS = 6371 * 1000;
+MISSILE_RADIUS = 400; // in meters
+MISSILE_DAMAGE = 40;
+MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
+MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
+
+// TODO(Jeff): find a way to share this function between here and models.js
+function haversineDistance(coords1, coords2) {
+  var dLat = (coords2.lat-coords1.lat) * Math.PI / 180;
+  var dLon = (coords2.long-coords1.long) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(coords1.lat * Math.PI / 180) * Math.cos(coords2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  var d = RAD_TO_METERS * c;
+  return d;  
+}
+
 function readCookie(name) {
   var nameEQ = name + "=";
   var ca = document.cookie.split(';');
@@ -72,7 +88,6 @@ function connectLoop() {
 }
 
 function calcXP(aliveSince) {
-  // TODO(jeff): getting the date on client side is not a good idea
   return Math.floor((serverTimeDiff + (new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
 }
 
@@ -148,7 +163,9 @@ Ext.setup({
   glossOnIcon: true,
   onReady: function() {
     var launchMissile = function(button, event) {
-      var missileMsg = "This target is TODO meters (TODO time) away. You will have " + you.inactiveMissiles-1 + " inactive missiles remaining. Continue?";
+      var distance = haversineDistance({lat: target.getPosition().lat(), long: target.getPosition().lng()}, {lat: you.location.lat(), long: you.location.lng() }); // TODO(jeff): change the haversineDistance function to take LatLng by default
+      var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
+      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (you.inactiveMissiles-1) + " inactive missiles remaining. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
           socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
@@ -346,7 +363,6 @@ tick = function() {
       }, 500);
       allMissiles[i].line.setMap(null);
       allMissiles[i] = null;
-      // TODO(jeff): need to sync to calc damages
     }
   }
 }
