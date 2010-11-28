@@ -2,7 +2,7 @@ TODO:
 - run through jslint
 - compress javascript before production http://closure-compiler.appspot.com/
 - login system (facebook login, etc.)
-- server pushes to client when a missile explodes (need a sync)
+- modify the allPlayers and allMissiles data type so junk isn't sent to the client, and make the username the key
 - handle death
 - need iphone icon and screen
 - phonegap wrapper
