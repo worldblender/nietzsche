@@ -1,6 +1,26 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid;
 var you = [];
-var socket = new io.Socket(); 
+var socket = new io.Socket();
+
+function readCookie(name) {
+  var nameEQ = name + "=";
+  var ca = document.cookie.split(';');
+  for(var i=0;i < ca.length;i++) {
+    var c = ca[i];
+    while (c.charAt(0)==' ') c = c.substring(1,c.length);
+    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+  }
+  return null;
+} 
+
+uid = readCookie("uid");
+if (!uid) {
+  uid = Math.random().toString().substring(2); // TODO(jeff): use the device id from phonegap
+  console.log("created new cookie: " + uid);
+  document.cookie = "uid=" + uid + "; expires=Wed, 1 Jan 2020 01:00:00 UTC; path=/";
+} else {
+  console.log("retrieved cookie: " + uid);
+}
 
 socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
 socket.on('message', function(obj) {
@@ -8,10 +28,9 @@ socket.on('message', function(obj) {
     serverTimeDiff = obj.time - (new Date()).getTime();
     allPlayers = obj.players;
     allMissiles = obj.missiles;
-    you.index = obj.youIndex;
     var inactiveMissiles = 0;
-    for (var i = 0; i < allPlayers[you.index].items.m.m.length; ++i) {
-      if (allPlayers[you.index].items.m.m[i] === null) {
+    for (var i = 0; i < allPlayers[uid].items.m.m.length; ++i) {
+      if (allPlayers[uid].items.m.m[i] === null) {
         inactiveMissiles++;
       }
     }
@@ -22,28 +41,19 @@ socket.on('message', function(obj) {
       populateMap();
     setInterval(tick, 900);
   } else if (obj.e === "player") {
-    var len = allPlayers.push(obj.player);
-    drawPlayer(len-1);
+    allPlayers[obj.player._id] = obj.player;
+    drawPlayer(obj.player._id);
   } else if (obj.e === "missile") {
     var len = allMissiles.push(obj.missile);
     drawMissile(len-1);
   } else if (obj.e === "moved") {
-    for (var i = 0; i < allPlayers.length; ++i) { // TODO: should allPlayers be a dict instead of an array so our lookups are faster?
-      if (allPlayers[i]._id === obj.player) {
-        var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng)
-        allPlayers[i].coords = movedLoc;
-        allPlayers[i].marker.setPosition(movedLoc);
-        break;
-      }
-    }
+    var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng)
+    allPlayers[obj.player].coords = movedLoc;
+    allPlayers[obj.player].marker.setPosition(movedLoc);
   } else if (obj.e === "damage") {
-    for (var d = 0; d < obj.damage.length; ++d) {
-      for (var i = 0; i < allPlayers.length; ++i) { // TODO: should allPlayers be a dict instead of an array so our lookups are faster?
-        if (allPlayers[i]._id === obj.damage[d].player) {
-          //console.log("reducing hp from " + allPlayers[i].hp + " by " + obj.damage[d].dmg);
-          allPlayers[i].hp -= obj.damage[d].dmg;
-        }
-      }
+    for (var i = 0; i < obj.damage.length; ++i) {
+      console.log("reducing hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
+      allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
     }
   }
 });
@@ -53,7 +63,7 @@ socket.on('disconnect', function() {
 
 function connectLoop() {
   if (socket.connected) {
-    socket.send({ e: "init", loc: { lat: you.location.lat(), lng: you.location.lng() }}); '' //TODO(jeff): temporary hack. should just reconnect to previous session
+    // TODO(jeff): get all the updates I missed
   } else {
     setTimeout(connectLoop, 10000);
     socket.connect();
@@ -113,7 +123,7 @@ function drawMissile(i) {
 }
 
 populateMap = function() {
-  for (var i = 0; i < allPlayers.length; ++i) {
+  for (var i in allPlayers) {
     drawPlayer(i);
   }
   for (var i = 0; i < allMissiles.length; ++i) {
@@ -124,10 +134,10 @@ populateMap = function() {
     if (you.location.lat() === position.coords.latitude && you.location.lng() === position.coords.longitude)
       return; // no actual change in location
     you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-    socket.send({ e: "move", loc: {lat: you.location.lat(), lng: you.location.lng() }});
-    allPlayers[you.index].coords.lat = position.coords.latitude;
-    allPlayers[you.index].coords.long = position.coords.longitude;
-    allPlayers[you.index].marker.setPosition(you.location);
+    socket.send({ e: "move", uid: uid, loc: {lat: you.location.lat(), lng: you.location.lng() }});
+    allPlayers[uid].coords.lat = position.coords.latitude;
+    allPlayers[uid].coords.long = position.coords.longitude;
+    allPlayers[uid].marker.setPosition(you.location);
   });
 }
 
@@ -138,10 +148,10 @@ Ext.setup({
   glossOnIcon: true,
   onReady: function() {
     var launchMissile = function(button, event) {
-      var missileMsg = "This target is TODO meters (TODO time) away. You will have " + you.inactiveMissiles + " inactive missiles remaining. Continue?";
+      var missileMsg = "This target is TODO meters (TODO time) away. You will have " + you.inactiveMissiles-1 + " inactive missiles remaining. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
-          socket.send({ e: "m", loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
+          socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
           you.inactiveMissiles--;
           if (you.inactiveMissiles === 0)
             missileButton.disable(true);
@@ -298,7 +308,8 @@ if (navigator.geolocation) {
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
       worldMap.map.setCenter(you.location);
-    socket.send({ e: "init", loc: { lat: you.location.lat(), lng: you.location.lng() }});
+
+    socket.send({ e: "init", uid: uid, loc: { lat: you.location.lat(), lng: you.location.lng() }});
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);

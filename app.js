@@ -36,20 +36,16 @@ if (!module.parent) {
   models.initializeDb();
 }
 
-function sync(client) {
+function sync(client, uid) {
   // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
   models.Missile.prototype.all(function(err, missileResults) {
     models.Player.prototype.all(function(err, playerResults) {
-      var currentPlayer;
-      for (var i = 0; i < playerResults.length; ++i) {
-        if (playerResults[i]._id === client.sessionId) {
-          //console.log("current player is index: " + i);
-          currentPlayer = i;
-          break;
-        }
+      var playerDict = {};
+      for (var i in playerResults) {
+        playerDict[playerResults[i]._id] = playerResults[i];
       }
-      client.send({ e: "sync", missiles: missileResults, players: playerResults, youIndex: currentPlayer, time: (new Date()).getTime() });
-      console.log({ missiles: missileResults, players: playerResults, youIndex: currentPlayer });
+      client.send({ e: "sync", missiles: missileResults, players: playerDict, time: (new Date()).getTime() });
+      console.log({ missiles: missileResults, players: playerDict, approxTime: (new Date()).getTime() });
     });
   });
 }
@@ -63,18 +59,18 @@ socket.on('connection', function(client) {
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
-      var p = new models.Player(client.sessionId, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, docs) {
+      var p = new models.Player(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, docs) {
         sync(client);
       });
-      client.broadcast({e: "player", player: p}, client.sessionId); // tell everyone else I am here. TODO(jeff): check if I can just remove the second parameter because it doesn't send to yourself anyway
+      client.broadcast({e: "player", player: p}); // tell everyone else I am here
     } else if (obj.e === "m") {
       // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
-      new models.Missile(client.sessionId, new models.Coords(obj.loc.lng, obj.loc.lat), socket, function(m) {
+      new models.Missile(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), socket, function(m) {
         socket.broadcast({e: "missile", missile: m});
       });
     } else if (obj.e === "move") {
-      models.move(client.sessionId, new models.Coords(obj.loc.lng, obj.loc.lat));
-      client.broadcast({player: client.sessionId, e: "moved", loc: obj.loc});
+      models.move(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat));
+      client.broadcast({player: obj.uid, e: "moved", loc: obj.loc});
     }
   });
   client.on('disconnect', function() {
