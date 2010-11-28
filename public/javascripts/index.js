@@ -36,6 +36,15 @@ socket.on('message', function(obj) {
         break;
       }
     }
+  } else if (obj.e === "damage") {
+    for (var d = 0; d < obj.damage.length; ++d) {
+      for (var i = 0; i < allPlayers.length; ++i) { // TODO: should allPlayers be a dict instead of an array so our lookups are faster?
+        if (allPlayers[i]._id === obj.damage[d].player) {
+          //console.log("reducing hp from " + allPlayers[i].hp + " by " + obj.damage[d].dmg);
+          allPlayers[i].hp -= obj.damage[d].dmg;
+        }
+      }
+    }
   }
 });
 socket.on('disconnect', function() {
