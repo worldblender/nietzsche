@@ -28,13 +28,11 @@ socket.on('message', function(obj) {
     var len = allMissiles.push(obj.missile);
     drawMissile(len-1);
   } else if (obj.e === "moved") {
-    obj.loc
-    obj.player
-
     for (var i = 0; i < allPlayers.length; ++i) { // TODO: should allPlayers be a dict instead of an array so our lookups are faster?
       if (allPlayers[i]._id === obj.player) {
-        allPlayers[i].coords = obj.loc;
-        allPlayers[i].marker.setPosition(obj.loc);
+        var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng)
+        allPlayers[i].coords = movedLoc;
+        allPlayers[i].marker.setPosition(movedLoc);
         break;
       }
     }
@@ -46,8 +44,7 @@ socket.on('disconnect', function() {
 
 function connectLoop() {
   if (socket.connected) {
-    socket.send({ e: "init", loc: you.location }); '' //TODO(jeff): temporary hack. should just reconnect to previous session
-    return;
+    socket.send({ e: "init", loc: { lat: you.location.lat(), lng: you.location.lng() }}); '' //TODO(jeff): temporary hack. should just reconnect to previous session
   } else {
     setTimeout(connectLoop, 10000);
     socket.connect();
@@ -115,10 +112,10 @@ populateMap = function() {
   }
 
   navigator.geolocation.watchPosition(function(position) {
-    if (you.location.sa === position.coords.latitude && you.location.ta === position.coords.longitude)
+    if (you.location.lat() === position.coords.latitude && you.location.lng() === position.coords.longitude)
       return; // no actual change in location
     you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-    socket.send({ e: "move", loc: you.location });
+    socket.send({ e: "move", loc: {lat: you.location.lat(), lng: you.location.lng() }});
     allPlayers[you.index].coords.lat = position.coords.latitude;
     allPlayers[you.index].coords.long = position.coords.longitude;
     allPlayers[you.index].marker.setPosition(you.location);
@@ -136,7 +133,7 @@ Ext.setup({
       var missileMsg = "This target is TODO meters (TODO time) away. You will have " + you.inactiveMissiles + " inactive missiles remaining. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
-          socket.send({ e: "m", loc: target.getPosition() });
+          socket.send({ e: "m", loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
           you.inactiveMissiles--;
           if (you.inactiveMissiles === 0)
             missileButton.disable(true);
@@ -294,7 +291,7 @@ if (navigator.geolocation) {
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
       worldMap.map.setCenter(you.location);
-    socket.send({ e: "init", loc: you.location });
+    socket.send({ e: "init", loc: { lat: you.location.lat(), lng: you.location.lng() }});
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);

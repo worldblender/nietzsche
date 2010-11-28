@@ -63,18 +63,18 @@ socket.on('connection', function(client) {
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
-      var p = new models.Player(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa), function(err, docs) {
+      var p = new models.Player(client.sessionId, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, docs) {
         sync(client);
       });
       client.broadcast({e: "player", player: p}, client.sessionId); // tell everyone else I am here. TODO(jeff): check if I can just remove the second parameter because it doesn't send to yourself anyway
     } else if (obj.e === "m") {
       // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
-      new models.Missile(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa), function(m) {
+      new models.Missile(client.sessionId, new models.Coords(obj.loc.lng, obj.loc.lat), function(m) {
         client.broadcast({e: "missile", missile: m});
         client.send({e: "missile", missile: m});
       });
     } else if (obj.e === "move") {
-      models.move(client.sessionId, new models.Coords(obj.loc.ta, obj.loc.sa));
+      models.move(client.sessionId, new models.Coords(obj.loc.lng, obj.loc.lat));
       client.broadcast({player: client.sessionId, e: "moved", loc: obj.loc});
     }
   });
