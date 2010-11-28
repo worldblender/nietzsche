@@ -128,7 +128,6 @@ Ext.setup({
   phoneStartupScreen: '/images/phone_startup.jpeg',
   glossOnIcon: true,
   onReady: function() {
-
     var launchMissile = function(button, event) {
       var missileMsg = "This target is TODO meters (TODO time) away. You will have " + you.inactiveMissiles + " inactive missiles remaining. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
@@ -137,7 +136,6 @@ Ext.setup({
           you.inactiveMissiles--;
           if (you.inactiveMissiles === 0)
             missileButton.disable(true);
-          // I considered resetting the worldTopbar but maybe users will want to launch multiple missiles at once
         }
       });
     };
@@ -301,6 +299,8 @@ tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
     if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
+      you.inactiveMissiles++;
+      missileButton.enable(true);
       var c = new google.maps.Circle({
         center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long),
         fillColor: "#00FFFF",
