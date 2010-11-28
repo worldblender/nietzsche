@@ -21,6 +21,12 @@ MapStyles.tron = [{
     { visibility: "off" }
   ]
 },{
+  featureType: "road.highway",
+  elementType: "all",
+  stylers: [
+    { visibility: "simplified" }
+  ]
+},{
   featureType: "transit",
   elementType: "all",
   stylers: [
