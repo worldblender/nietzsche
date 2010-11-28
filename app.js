@@ -18,16 +18,6 @@ app.configure(function(){
   app.use(express.staticProvider(__dirname + '/public'));
 });
 
-function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function nameGenerator() {
-  var firstWord = ["Fuzzy", "Sticky", "Hot", "Fast", "Quick", "Lazy", "Crazy", "Easy", "Cold", "Valley", "Evening", "Morning"];
-  var secondWord = ["Bear", "Feet", "Gun", "Shooter", "Boss", "Nerd", "Geek", "Dork", "Runner", "Driver", "Spy", "Clown"];
-  return "Agent" + randomItem(firstWord) + randomItem(secondWord);
-}
-
 // Only listen on $ node app.js
 if (!module.parent) {
   app.listen(80);
@@ -59,6 +49,7 @@ socket.on('connection', function(client) {
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
+      // TODO(jeff): make it so it only creates a new Player if it really is a new player...
       var p = new models.Player(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, docs) {
         sync(client);
       });

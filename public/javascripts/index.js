@@ -81,7 +81,7 @@ function drawPlayer(i) {
   var pmarker = new google.maps.Marker({
     position: plocation,
     map: worldMap.map,
-    title: allPlayers[i]._id,
+    title: allPlayers[i].name,
     icon: new google.maps.MarkerImage(
       "/images/soldier.png", 
       new google.maps.Size(24, 24),
@@ -92,7 +92,7 @@ function drawPlayer(i) {
   allPlayers[i].marker = pmarker;
   pmarker.info = allPlayers[i];
   google.maps.event.addListener(pmarker, 'click', function() {
-    Ext.Msg.alert("Agent " + this.info._id, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
+    Ext.Msg.alert(this.info.name, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
   });
 }
 

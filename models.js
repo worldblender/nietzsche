@@ -29,6 +29,16 @@ exports.clearDb = function() {
   db.dropDatabase(noCallback);
 };
 
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function nameGenerator() {
+  var firstWord = ["Fuzzy", "Sticky", "Hot", "Fast", "Quick", "Lazy", "Crazy", "Easy", "Cold", "Valley", "Evening", "Morning"];
+  var secondWord = ["Bear", "Feet", "Gun", "Shooter", "Boss", "Nerd", "Geek", "Dork", "Runner", "Driver", "Spy", "Clown"];
+  return "Agent" + randomItem(firstWord) + randomItem(secondWord);
+}
+
 function haversineDistance(coords1, coords2) {
   var dLat = (coords2.lat-coords1.lat) * Math.PI / 180;
   var dLon = (coords2.long-coords1.long) * Math.PI / 180;
@@ -52,6 +62,7 @@ exports.Player = function(username, coords, callback) {
   this.coords = coords; // TODO(jeff): check validity
   this.items = { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 };
   this.aliveSince = (new Date()).getTime() + 0.01;
+  this.name = nameGenerator();
   db.players.insert(this, callback);
   return this;
 }

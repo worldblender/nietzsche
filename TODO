@@ -1,8 +1,7 @@
 TODO:
 - run through jslint
 - compress javascript before production http://closure-compiler.appspot.com/
-- login system (facebook login, etc.)
-- modify the allPlayers and allMissiles data type so junk isn't sent to the client, and make the username the key
+- modify the allPlayers and allMissiles data type so junk isn't sent to the client
 - handle death
 - need iphone icon and screen
 - phonegap wrapper
