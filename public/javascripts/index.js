@@ -300,7 +300,7 @@ if (navigator.geolocation) {
 tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
-    if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you populate the world
+    if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
       var c = new google.maps.Circle({
         center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long),
         fillColor: "#00FFFF",
@@ -313,15 +313,15 @@ tick = function() {
       var intvl = setInterval(function() {
         if (r >= 240) // TODO(jeff): make this radius actually the radius of damage
           r--;
+        else if (r % 2 === 0)
+          r += 20;
         else if (r <= 5) {
           clearInterval(intvl);
           c.setMap(null);
           return;
         }
-        else if (r % 2 === 0)
-          r += 6;
         else
-          r -= 6;
+          r -= 20;
         c.setRadius(r);
       }, 500);
       allMissiles[i].line.setMap(null);

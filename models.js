@@ -56,7 +56,7 @@ exports.Player = function(username, coords, callback) {
   return this;
 }
 
-exports.Missile = function(username, arrivalCoords, callback) {
+exports.Missile = function(username, arrivalCoords, socket, callback) {
   var m = this;
   m.owner = username;
   m.departureTime = (new Date()).getTime() + 0.01; // hack of adding 0.01 to force storing in mongodb as float, so that util.inspect will read it out properly
@@ -75,7 +75,7 @@ exports.Missile = function(username, arrivalCoords, callback) {
 
         db.missiles.insert(m, function(err, docs) {
           //console.log("lauched missile; " + printObject(m));
-          setTimeout(function() {missileArrived(docs[0]);}, m.arrivalTime - (new Date()).getTime());
+          setTimeout(function() {missileArrived(docs[0], socket);}, m.arrivalTime - (new Date()).getTime());
           // put this id in there
           document.items.m.m[i] = docs[0]._id;
           db.players.save(document, noCallback);
@@ -111,7 +111,7 @@ exports.Missile.prototype.all = function(callback) {
   });
 }
 
-function missileArrived(missile) {
+function missileArrived(missile, socket) {
   //console.log("missile has arrived: " + missile.arrivalCoords);
   //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.players.findOne({_id: missile.owner}, function(err, document) {
@@ -122,12 +122,18 @@ function missileArrived(missile) {
       }
     }
     db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
+      var dmg = [];
       for (var i = 0; i < result.documents[0].results.length; ++i) {
         // TODO(jeff): race condition :-(   use findAndModify in the future
         var obj = result.documents[0].results[i].obj;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         obj.hp -= damage;
         db.players.save(obj, noCallback);
+        dmg.push({player: obj._id, dmg: damage});
+      }
+      if (dmg.length > 0) {
+        console.log("broadcasting damage: " + util.inspect(dmg));
+        socket.broadcast({e: "damage", damage: dmg});
       }
     });
   });
