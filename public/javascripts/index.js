@@ -44,6 +44,8 @@ socket.on('message', function(obj) {
     serverTimeDiff = obj.time - (new Date()).getTime();
     allPlayers = obj.players;
     allMissiles = obj.missiles;
+    if (allPlayers[uid].hp <= 0 && worldTopbar)
+      worldTopbar.hide();
     var inactiveMissiles = 0;
     for (var i = 0; i < allPlayers[uid].items.m.m.length; ++i) {
       if (allPlayers[uid].items.m.m[i] === null) {
@@ -70,6 +72,15 @@ socket.on('message', function(obj) {
     for (var i = 0; i < obj.damage.length; ++i) {
       console.log("reducing hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
       allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
+      if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
+        allPlayers[obj.damage[i].player].hp = 0;
+        allPlayers[obj.damage[i].player].marker.setMap(null);
+        drawPlayer(obj.damage[i].player);
+        if (obj.damage[i].player === uid && worldTopbar) {
+          worldTopbar.hide();
+          Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!", Ext.emptyFn);
+        }
+      }
     }
   }
 });
@@ -93,21 +104,40 @@ function calcXP(aliveSince) {
 
 function drawPlayer(i) {
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.long);
-  var pmarker = new google.maps.Marker({
-    position: plocation,
-    map: worldMap.map,
-    title: allPlayers[i].name,
-    icon: new google.maps.MarkerImage(
-      "/images/soldier.png", 
-      new google.maps.Size(24, 24),
-      new google.maps.Point(0, 0),
-      new google.maps.Point(12, 12)
-    )
-  });
+  var pmarker;
+  if (allPlayers[i].hp > 0) {
+    pmarker = new google.maps.Marker({
+      position: plocation,
+      map: worldMap.map,
+      title: allPlayers[i].name,
+      icon: new google.maps.MarkerImage(
+        "/images/soldier.png", 
+        new google.maps.Size(24, 24),
+        new google.maps.Point(0, 0),
+        new google.maps.Point(12, 12)
+      )
+    });
+  } else {
+    pmarker = new google.maps.Marker({
+      position: plocation,
+      map: worldMap.map,
+      title: allPlayers[i].name + "'s remains",
+      icon: new google.maps.MarkerImage(
+        "/images/dead.png", 
+        new google.maps.Size(32, 32),
+        new google.maps.Point(0, 0),
+        new google.maps.Point(16, 16)
+      )
+    });
+  }
   allPlayers[i].marker = pmarker;
   pmarker.info = allPlayers[i];
   google.maps.event.addListener(pmarker, 'click', function() {
-    Ext.Msg.alert(this.info.name, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
+    if (allPlayers[i].hp > 0) {
+      Ext.Msg.alert(this.info.name, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
+    } else {
+      Ext.Msg.alert(this.info.name, this.info.name + "'s remains lay here");
+    }
   });
 }
 
@@ -240,6 +270,8 @@ Ext.setup({
       missileButton,
       landmineButton]
     });
+    if (allPlayers[uid].hp <= 0)
+      worldTopbar.hide();
 
     worldMap = new Ext.Map({
       mapOptions: {
@@ -348,7 +380,7 @@ tick = function() {
       });
       var r = 0;
       var intvl = setInterval(function() {
-        if (r >= 240) // TODO(jeff): make this radius actually the radius of damage
+        if (r >= 400 && r % 2 === 0) // TODO(jeff): make this the constant / variable
           r--;
         else if (r % 2 === 0)
           r += 20;
@@ -356,9 +388,9 @@ tick = function() {
           clearInterval(intvl);
           c.setMap(null);
           return;
-        }
-        else
+        } else {
           r -= 20;
+        }
         c.setRadius(r);
       }, 500);
       allMissiles[i].line.setMap(null);
