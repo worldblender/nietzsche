@@ -10,5 +10,4 @@ TODO:
 - need iphone icon and screen
 - phonegap wrapper
 - why don't some phones show the players/missiles? (Mike's sometimes)
-- better reconnection screen (stay on until reconnected)
 - on android, the markers don't render, the app seems frozeny (found open bug, which should be fixed in sencha touch 1.0.1 http://www.sencha.com/forum/showthread.php?111727-OPEN-403-Android-2.2-map-bug/page2)

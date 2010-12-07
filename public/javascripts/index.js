@@ -1,4 +1,4 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox;
 var you = [];
 var socket = new io.Socket();
 
@@ -78,23 +78,25 @@ socket.on('message', function(obj) {
         drawPlayer(obj.damage[i].player);
         if (obj.damage[i].player === uid && worldTopbar) {
           worldTopbar.hide();
-          Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!", Ext.emptyFn);
+          Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
         }
       }
     }
   }
 });
+
 socket.on('disconnect', function() {
+  reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
   setTimeout(connectLoop, 1000);
 });
 
 function connectLoop() {
   if (socket.connected) {
+    reconnectBox.hide();
     // TODO(jeff): get all the updates I missed
   } else {
-    setTimeout(connectLoop, 10000);
+    setTimeout(connectLoop, 3000);
     socket.connect();
-    Ext.Msg.alert('Disconnected', "Attempting to reconnect...", Ext.emptyFn);
   }
 }
 
@@ -206,7 +208,7 @@ Ext.setup({
 
     var attackToggle = function(t, button, pressed) {
       if (button.text == "Attack" && pressed) {
-        Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine", Ext.emptyFn);
+        Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
 
         targetListener = google.maps.event.addListener(worldMap.map, "click", function(event) {
           if (target) {
@@ -268,7 +270,7 @@ Ext.setup({
       missileButton,
       /*landmineButton TODO*/]
     });
-    if (allPlayers[uid].hp <= 0)
+    if (allPlayers && allPlayers[uid].hp <= 0)
       worldTopbar.hide();
 
     worldMap = new Ext.Map({
@@ -360,7 +362,7 @@ if (navigator.geolocation) {
     socket.send({ e: "init", uid: uid, loc: { lat: you.location.lat(), lng: you.location.lng() }});
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
-  Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.", Ext.emptyFn);
+  Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
 }
 
 tick = function() {
