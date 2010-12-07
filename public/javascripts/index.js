@@ -155,8 +155,6 @@ function drawMissile(i) {
     allMissiles[i].line.setPath(missileLine); // TODO(jeff): the line is drawn off from the crosshair's center. is it because of the earth's spherical shape?
   } else {
     var missilePath = new google.maps.Polyline({
-      //path: [new google.maps.LatLng(allMissiles[i].departureCoords.lat, allMissiles[i].departureCoords.long),
-      //       new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long)],
       path: missileLine,
       strokeColor: "#00FFFF",
       strokeOpacity: 1.0,
@@ -247,11 +245,11 @@ Ext.setup({
       hidden: true,
       handler: launchMissile
     });
-    landmineButton = new Ext.Button({
+    /*landmineButton = new Ext.Button({
       text: 'Landmine',
       hidden: true,
       ui: 'action'
-    });
+    }); TODO(jeff): remove comment when adding this */
 
     worldTopbar = new Ext.Toolbar({
       dock: 'top',
@@ -261,14 +259,14 @@ Ext.setup({
         listeners: { toggle: attackToggle },
         items: [{
           text: 'Attack'
-        }, {
-          text: 'Defense',
+        //}, {   TODO(jeff): remove when adding this
+        //  text: 'Defense',
         }]
       }, {
         xtype: 'spacer'
       },
       missileButton,
-      landmineButton]
+      /*landmineButton TODO*/]
     });
     if (allPlayers[uid].hp <= 0)
       worldTopbar.hide();
@@ -334,16 +332,17 @@ Ext.setup({
       fullscreen: true,
       tabBar: {
         dock: 'bottom',
+        hidden: true, // TODO remove this line when for real
         layout: {
           pack: 'center'
         }
       },
       items: [
         world,
-        missions,
-        shop,
-        team,
-        { iconCls: "user", title: "Profile" }
+        //missions, TODO remove comments when for real
+        //shop,
+        //team,
+        //{ iconCls: "user", title: "Profile" }
       ]
     });
   }

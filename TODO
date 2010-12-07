@@ -1,10 +1,12 @@
 TODO:
 - run through jslint
+- when in attack mode, be able to just click on a player
+- make it easier to fire -- info on initial target click
 - compress javascript before production http://closure-compiler.appspot.com/
-- modify the allPlayers and allMissiles data type so junk isn't sent to the client
+- modify the allPlayers and allMissiles data type so non-needed fields are not sent to the client
 - handle death
 - need iphone icon and screen
 - phonegap wrapper
-- why don't some phones show the players/missiles?
+- why don't some phones show the players/missiles? (Mike's sometimes)
 - better reconnection screen (stay on until reconnected)
 - on android, the markers don't render, the app seems frozeny (found open bug, which should be fixed in sencha touch 1.0.1 http://www.sencha.com/forum/showthread.php?111727-OPEN-403-Android-2.2-map-bug/page2)
