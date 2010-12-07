@@ -224,11 +224,11 @@ Ext.setup({
             )
           });
           missileButton.show();
-          landmineButton.show();
+          //landmineButton.show(); TODO
         });
       } else {
         missileButton.hide();
-        landmineButton.hide();
+        //landmineButton.hide(); TODO
         if (target) {
           target.setMap(null);
         }
