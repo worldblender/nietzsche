@@ -73,6 +73,8 @@ exports.Missile = function(username, arrivalCoords, socket, callback) {
   m.departureTime = (new Date()).getTime() + 0.01; // hack of adding 0.01 to force storing in mongodb as float, so that util.inspect will read it out properly
   m.arrivalCoords = arrivalCoords; // TODO(jeff): check validity
   db.players.findOne({_id: username}, function(err, document) {
+    if (!document)
+      return;
     //console.log("missile being launched by: " + username);
     // TODO(jeff): check for error
     // TODO(jeff): another race condition here. player launching 2 missiles at the same time might get them both launched
@@ -101,6 +103,8 @@ exports.Missile = function(username, arrivalCoords, socket, callback) {
 exports.move = function(sessionId, newLocation, client) {
   // TODO(jeff): check validity of newLocation
   db.players.findOne({_id: sessionId}, function(err, document) {
+    if (!document)
+      return;
     document.coords = newLocation;
     db.players.save(document, noCallback);
   });
@@ -139,6 +143,8 @@ function missileArrived(missile, socket) {
         var obj = result.documents[0].results[i].obj;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         obj.hp -= damage;
+        if (obj.hp < 0)
+          obj.hp = 0;
         db.players.save(obj, noCallback);
         dmg.push({player: obj._id, dmg: damage});
       }

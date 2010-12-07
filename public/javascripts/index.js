@@ -31,7 +31,7 @@ function readCookie(name) {
 
 uid = readCookie("uid");
 if (!uid) {
-  uid = Math.random().toString().substring(2); // TODO(jeff): use the device id from phonegap
+  uid = Math.random().toString().substring(2); // TODO(jeff): use the device.uuid from phonegap for mobile apps
   console.log("created new cookie: " + uid);
   document.cookie = "uid=" + uid + "; expires=Wed, 1 Jan 2020 01:00:00 UTC; path=/";
 } else {
