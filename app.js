@@ -32,7 +32,6 @@ function sync(client, uid) {
       var playerDict = {};
       for (var i in playerResults) {
         playerDict[playerResults[i]._id] = playerResults[i];
-        console.log(playerResults[i]._id + " " + typeof(playerResults[i]._id) + " " + uid + " " + typeof(uid));
         if (playerResults[i]._id !== uid)
           delete playerDict[playerResults[i]._id].items;
       }

@@ -70,7 +70,7 @@ socket.on('message', function(obj) {
     allPlayers[obj.player].marker.setPosition(movedLoc);
   } else if (obj.e === "damage") {
     for (var i = 0; i < obj.damage.length; ++i) {
-      console.log("reducing hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
+      //console.log("reducing hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
       allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
       if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
         allPlayers[obj.damage[i].player].hp = 0;
@@ -82,6 +82,8 @@ socket.on('message', function(obj) {
         }
       }
     }
+  } else if (obj.e === "gxp") {
+    allPlayers[obj.uid] += obj.gxp;
   }
 });
 
@@ -100,8 +102,8 @@ function connectLoop() {
   }
 }
 
-function calcXP(aliveSince) {
-  return Math.floor((serverTimeDiff + (new Date()).getTime() - aliveSince) / 60000); // 1 XP per minute
+function calcXP(player) {
+  return Math.floor((serverTimeDiff + (new Date()).getTime() - player.aliveSince) / 60000) + player.gxp; // 1 XP per minute + gainedXP
 }
 
 function drawPlayer(i) {
@@ -136,7 +138,7 @@ function drawPlayer(i) {
   pmarker.info = allPlayers[i];
   google.maps.event.addListener(pmarker, 'click', function() {
     if (allPlayers[i].hp > 0) {
-      Ext.Msg.alert(this.info.name, this.info.hp + "hp " + calcXP(this.info.aliveSince) + "xp");
+      Ext.Msg.alert(this.info.name, this.info.hp + "hp " + calcXP(this.info) + "xp");
     } else {
       Ext.Msg.alert(this.info.name, this.info.name + "'s remains lay here");
     }

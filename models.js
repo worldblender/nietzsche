@@ -52,26 +52,27 @@ exports.Coords = function(long, lat) {
   this.lat = lat;
 }
 
-exports.Player = function(username, coords, callback) {
-  this._id = username; // TODO(jeff): check uniqueness
+exports.Player = function(uid, coords, callback) {
+  this._id = uid; // TODO(jeff): check uniqueness
   this.hp = INITIAL_HP;
+  this.gxp = 0; // gxp is gained XP. total XP = gxp + minutesAlive
   this.coords = coords; // TODO(jeff): check validity
   this.items = { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 };
   this.aliveSince = (new Date()).getTime() + 0.01;
   this.name = nameGenerator();
   db.players.insert(this, callback);
+  db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
   return this;
 }
 
-exports.Missile = function(username, arrivalCoords, socket, callback) {
+exports.Missile = function(uid, arrivalCoords, socket, callback) {
   var m = this;
-  m.owner = username;
+  m.owner = uid;
   m.departureTime = (new Date()).getTime() + 0.01; // hack of adding 0.01 to force storing in mongodb as float, so that util.inspect will read it out properly
   m.arrivalCoords = arrivalCoords; // TODO(jeff): check validity
-  db.players.findOne({_id: username}, function(err, document) {
+  db.players.findOne({_id: uid}, function(err, document) {
     if (!document)
       return;
-    //console.log("missile being launched by: " + username);
     // TODO(jeff): check for error
     // TODO(jeff): another race condition here. player launching 2 missiles at the same time might get them both launched
     for (var i = 0; i < document.items.m.m.length; i++) {
@@ -83,11 +84,11 @@ exports.Missile = function(username, arrivalCoords, socket, callback) {
         m.arrivalTime = m.departureTime + duration * 1000;
 
         db.missiles.insert(m, function(err, docs) {
-          //console.log("lauched missile; " + printObject(m));
           setTimeout(function() {missileArrived(docs[0], socket);}, m.arrivalTime - (new Date()).getTime());
           // put this id in there
           document.items.m.m[i] = docs[0]._id;
           db.players.save(document, noCallback);
+          db.events.insert({e: "missile", uid: uid, data: arrivalCoords}, noCallback);
         });
         callback(m);
         break; // found an available missile slot and used it, stop looking
@@ -96,13 +97,14 @@ exports.Missile = function(username, arrivalCoords, socket, callback) {
   });
 }
 
-exports.move = function(sessionId, newLocation, client) {
+exports.move = function(uid, newLocation, client) {
   // TODO(jeff): check validity of newLocation
-  db.players.findOne({_id: sessionId}, function(err, document) {
+  db.players.findOne({_id: uid}, function(err, document) {
     if (!document)
       return;
     document.coords = newLocation;
     db.players.save(document, noCallback);
+    db.events.insert({e: "move", uid: uid, data: newLocation}, noCallback);
   });
 }
 
@@ -123,8 +125,6 @@ exports.Missile.prototype.all = function(callback) {
 }
 
 function missileArrived(missile, socket) {
-  //console.log("missile has arrived: " + missile.arrivalCoords);
-  //console.log({geoNear: "players", near: missile.arrivalCoords, spherical:true});
   db.players.findOne({_id: missile.owner}, function(err, document) {
     for (var i = 0; i < document.items.m.m.length; ++i) {
       if (document.items.m.m[i] !== null && missile._id.str === document.items.m.m[i].str) {
@@ -139,14 +139,22 @@ function missileArrived(missile, socket) {
         var obj = result.documents[0].results[i].obj;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         obj.hp -= damage;
-        if (obj.hp < 0)
+        if (obj.hp < 0) {
           obj.hp = 0;
+          document.gxp += 100;
+          db.players.save(document, noCallback);
+          socket.broadcast({e: "gxp", uid: document._id, gxp: 100;});
+          db.events.insert({e: "kill", uid: missile.owner, data: obj.uid}, noCallback);
+          db.events.insert({e: "killed", uid: obj.uid, data: missile.owner}, noCallback); // redundant but nice
+        }
         db.players.save(obj, noCallback);
         dmg.push({player: obj._id, dmg: damage});
+        db.events.insert({e: "damaged", uid: obj._id, data: damage}, noCallback); // redundant but nice
       }
       if (dmg.length > 0) {
-        console.log("broadcasting damage: " + util.inspect(dmg));
+        // onsole.log("broadcasting damage: " + util.inspect(dmg));
         socket.broadcast({e: "damage", damage: dmg});
+        db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
       }
     });
   });
@@ -159,6 +167,9 @@ exports.initializeDb = function() {
   });
   db.collection('missiles', function(err, collection) {
     db.missiles = collection;
+  });
+  db.collection('events', function(err, collection) {
+    db.events = collection;
   });
 }
 
@@ -175,7 +186,10 @@ exports.resetDb = function() {
       // create missiles index
       db.missiles.createIndex([['owner', 1]], noCallback);
     });
+    db.collection('events', function(err, collection) {
+      db.events = collection;
+      // create events index
+      db.events.createIndex([['e', 1], ['uid', 1]], noCallback);
+    });
   });
 }
-
-// Events: store recent events to enable debugging, notifications, viewing recent events, and potentially game replays
