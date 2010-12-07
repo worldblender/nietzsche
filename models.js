@@ -25,10 +25,6 @@ db.open(function(err, db) {
 
 // useful functions
 
-exports.clearDb = function() {
-  db.dropDatabase(noCallback);
-};
-
 function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -160,12 +156,26 @@ exports.initializeDb = function() {
   // initialize the collection objects
   db.collection('players', function(err, collection) {
     db.players = collection;
-    // create players index
-    db.players.createIndex([['coords', '2d']], noCallback); //TODO(jeff): move these createIndex functions to some db reset method
   });
   db.collection('missiles', function(err, collection) {
     db.missiles = collection;
-    // create missiles index
-    db.missiles.createIndex([['owner', 1]], noCallback);
   });
 }
+
+exports.resetDb = function() {
+  db.dropDatabase(function() {
+    // initialize the collection objects
+    db.collection('players', function(err, collection) {
+      db.players = collection;
+      // create players index
+      db.players.createIndex([['coords', '2d']], noCallback); //TODO(jeff): move these createIndex functions to some db reset method
+    });
+    db.collection('missiles', function(err, collection) {
+      db.missiles = collection;
+      // create missiles index
+      db.missiles.createIndex([['owner', 1]], noCallback);
+    });
+  });
+}
+
+// Events: store recent events to enable debugging, notifications, viewing recent events, and potentially game replays

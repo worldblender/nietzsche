@@ -22,8 +22,7 @@ app.configure(function(){
 if (!module.parent) {
   app.listen(80);
   console.log("Express server listening on port %d", app.address().port)
-  models.clearDb(); // TODO(Jeff): remove this in production version
-  models.initializeDb();
+  models.resetDb(); // TODO(jeff): change this to initializeDb in production
 }
 
 function sync(client, uid) {
@@ -33,6 +32,9 @@ function sync(client, uid) {
       var playerDict = {};
       for (var i in playerResults) {
         playerDict[playerResults[i]._id] = playerResults[i];
+        console.log(playerResults[i]._id + " " + typeof(playerResults[i]._id) + " " + uid + " " + typeof(uid));
+        if (playerResults[i]._id !== uid)
+          delete playerDict[playerResults[i]._id].items;
       }
       client.send({ e: "sync", missiles: missileResults, players: playerDict, time: (new Date()).getTime() });
       console.log({ missiles: missileResults, players: playerDict, approxTime: (new Date()).getTime() });
@@ -51,7 +53,7 @@ socket.on('connection', function(client) {
     if (obj.e === "init") {
       // TODO(jeff): make it so it only creates a new Player if it really is a new player...
       var p = new models.Player(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, docs) {
-        sync(client);
+        sync(client, obj.uid);
       });
       client.broadcast({e: "player", player: p}); // tell everyone else I am here
     } else if (obj.e === "m") {
