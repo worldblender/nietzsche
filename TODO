@@ -2,11 +2,10 @@ TODO:
 - "you" should be a different color than the other players
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
 - run through jslint
-- when in attack mode, be able to just click on a player
+- when in attack mode, players should not be clickable
 - make it easier to fire -- info on initial target click
 - compress javascript before production http://closure-compiler.appspot.com/
 - handle respawning
 - need iphone icon and screen
 - phonegap wrapper
-- why don't some phones show the players/missiles? (Mike's sometimes)
 - on android, the markers don't render, the app seems frozeny (found open bug, which should be fixed in sencha touch 1.0.1 http://www.sencha.com/forum/showthread.php?111727-OPEN-403-Android-2.2-map-bug/page2)

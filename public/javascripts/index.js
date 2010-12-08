@@ -67,10 +67,11 @@ socket.on('message', function(obj) {
   } else if (obj.e === "moved") {
     var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng)
     allPlayers[obj.player].coords = movedLoc;
-    allPlayers[obj.player].marker.setPosition(movedLoc);
+    if (allPlayers[obj.player].marker)
+      allPlayers[obj.player].marker.setPosition(movedLoc);
   } else if (obj.e === "damage") {
     for (var i = 0; i < obj.damage.length; ++i) {
-      //console.log("reducing hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
+      //console.log("reducing " + obj.damage[i].player + " hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
       allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
       if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
         allPlayers[obj.damage[i].player].hp = 0;
@@ -83,7 +84,7 @@ socket.on('message', function(obj) {
       }
     }
   } else if (obj.e === "gxp") {
-    allPlayers[obj.uid] += obj.gxp;
+    allPlayers[obj.uid].gxp += obj.gxp;
   }
 });
 
@@ -97,7 +98,7 @@ function connectLoop() {
     reconnectBox.hide();
     // TODO(jeff): get all the updates I missed
   } else {
-    setTimeout(connectLoop, 3000);
+    setTimeout(connectLoop, 2000);
     socket.connect();
   }
 }
@@ -107,10 +108,12 @@ function calcXP(player) {
 }
 
 function drawPlayer(i) {
+  if (!worldMap)
+    return;
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.long);
-  var pmarker;
+  //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
   if (allPlayers[i].hp > 0) {
-    pmarker = new google.maps.Marker({
+    allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
       title: allPlayers[i].name,
@@ -122,7 +125,7 @@ function drawPlayer(i) {
       )
     });
   } else {
-    pmarker = new google.maps.Marker({
+    allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
       title: allPlayers[i].name + "'s remains",
@@ -134,10 +137,9 @@ function drawPlayer(i) {
       )
     });
   }
-  allPlayers[i].marker = pmarker;
-  pmarker.info = allPlayers[i];
-  google.maps.event.addListener(pmarker, 'click', function() {
-    if (allPlayers[i].hp > 0) {
+  allPlayers[i].marker.info = allPlayers[i];
+  google.maps.event.addListener(allPlayers[i].marker, 'click', function() {
+    if (this.info.hp > 0) {
       Ext.Msg.alert(this.info.name, this.info.hp + "hp " + calcXP(this.info) + "xp");
     } else {
       Ext.Msg.alert(this.info.name, this.info.name + "'s remains lay here");
@@ -146,7 +148,7 @@ function drawPlayer(i) {
 }
 
 function drawMissile(i) {
-  if (allMissiles[i] === null)
+  if (allMissiles[i] === null || !worldMap)
     return;
   var missileProgress = ((serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime));
   if (missileProgress > 1 || missileProgress < 0)
@@ -371,7 +373,7 @@ tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
     if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
-      you.inactiveMissiles++;
+      you.inactiveMissiles++; // TODO(jeff): bug -- everyone gets extra missiles when one explodes
       missileButton.enable(true);
       var c = new google.maps.Circle({
         center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long),
@@ -379,6 +381,7 @@ tick = function() {
         fillOpacity: 0.5,
         strokeColor: "#00FFFF",
         map: worldMap.map,
+        clickable: false,
         radius: 0
       });
       var r = 0;

@@ -58,6 +58,7 @@ socket.on('connection', function(client) {
     } else if (obj.e === "m") {
       // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
       new models.Missile(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), socket, function(m) {
+        // TODO(jeff): only broadcast the missile if it was valid (otherwise players can cheat)
         socket.broadcast({e: "missile", missile: m});
       });
     } else if (obj.e === "move") {

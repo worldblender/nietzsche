@@ -137,9 +137,11 @@ function missileArrived(missile, socket) {
       for (var i = 0; i < result.documents[0].results.length; ++i) {
         // TODO(jeff): race condition :-(   use findAndModify in the future
         var obj = result.documents[0].results[i].obj;
+        if (obj.hp <= 0)
+          continue;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         obj.hp -= damage;
-        if (obj.hp < 0) {
+        if (obj.hp <= 0) {
           obj.hp = 0;
           document.gxp += 100;
           db.players.save(document, noCallback);
