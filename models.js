@@ -181,7 +181,7 @@ exports.resetDb = function() {
     db.collection('players', function(err, collection) {
       db.players = collection;
       // create players index
-      db.players.createIndex([['coords', '2d']], noCallback); //TODO(jeff): move these createIndex functions to some db reset method
+      db.players.createIndex([['coords', '2d']], noCallback);
     });
     db.collection('missiles', function(err, collection) {
       db.missiles = collection;
