@@ -43,7 +43,7 @@ function sync(client, uid) {
 
 // socket.io
 // TODO(jeff): compress/pack the socket.io .js file
-// TODO(jeff): why does it say the conection is ready twice?
+// TODO(jeff): why does it say the connection is ready twice?
 var socket = io.listen(app);
 socket.on('connection', function(client) {
   console.log('socket.io connection: ' + client.sessionId);
