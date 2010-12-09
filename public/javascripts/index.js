@@ -1,5 +1,4 @@
 var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile;
-var you = [];
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -11,7 +10,7 @@ MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
 // TODO(Jeff): find a way to share this function between here and models.js
 function haversineDistance(coords1, coords2) {
   var dLat = (coords2.lat-coords1.lat) * Math.PI / 180;
-  var dLon = (coords2.long-coords1.long) * Math.PI / 180;
+  var dLon = (coords2.lng-coords1.lng) * Math.PI / 180;
   var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(coords1.lat * Math.PI / 180) * Math.cos(coords2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   var d = RAD_TO_METERS * c;
@@ -36,7 +35,16 @@ function readCookie(name) {
     if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
   }
   return null;
-} 
+}
+
+function numReadyMissiles(m) {
+  var readyMissiles = 0;
+  for (var i = 0; i < m.length; ++i) {
+    if (m[i] === null) {
+      readyMissiles++;
+    }
+  }
+}
 
 uid = readCookie("uid");
 if (!uid) {
@@ -55,14 +63,8 @@ socket.on('message', function(obj) {
     allMissiles = obj.missiles;
     if (allPlayers[uid].hp <= 0 && worldTopbar)
       worldTopbar.hide();
-    var inactiveMissiles = 0;
-    for (var i = 0; i < allPlayers[uid].items.m.m.length; ++i) {
-      if (allPlayers[uid].items.m.m[i] === null) {
-        inactiveMissiles++;
-      }
-    }
-    you.inactiveMissiles = inactiveMissiles; // TODO: make inactiveMissiles a helper funtion for allPlayers[uid]
-    if (inactiveMissiles === 0)
+    allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
+    if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
     if (worldMap)
       populateMap();
@@ -97,7 +99,7 @@ socket.on('message', function(obj) {
   } else if (obj.e === "events") {
     console.log(obj.events.length);
     var myxp = calcXP(allPlayers[uid]);
-    var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
+    var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
     for (var i = 0; i < obj.events.length; i++) {
       var e = obj.events[i];
       if (e.e === "missile") {
@@ -141,7 +143,7 @@ function calcXP(player) {
 function drawPlayer(i) {
   if (!worldMap)
     return;
-  var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.long);
+  var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.lng);
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
@@ -183,9 +185,9 @@ function drawMissile(i) {
   if (missileProgress > 1 || missileProgress < 0)
     return;
   var missileLine = [new google.maps.LatLng(allMissiles[i].departureCoords.lat,
-                                            allMissiles[i].departureCoords.long),
+                                            allMissiles[i].departureCoords.lng),
                      new google.maps.LatLng(allMissiles[i].departureCoords.lat + (allMissiles[i].arrivalCoords.lat - allMissiles[i].departureCoords.lat) * missileProgress,
-                                            allMissiles[i].departureCoords.long + (allMissiles[i].arrivalCoords.long - allMissiles[i].departureCoords.long) * missileProgress)];
+                                            allMissiles[i].departureCoords.lng + (allMissiles[i].arrivalCoords.lng - allMissiles[i].departureCoords.lng) * missileProgress)];
   if (allMissiles[i].line) {
     allMissiles[i].line.setPath(missileLine); // TODO(jeff): the line is drawn off from the crosshair's center. is it because of the earth's spherical shape?
   } else {
@@ -209,13 +211,12 @@ populateMap = function() {
   }
 
   navigator.geolocation.watchPosition(function(position) {
-    if (you.location.lat() === position.coords.latitude && you.location.lng() === position.coords.longitude)
+    if (allPlayers[uid].coords.lat === position.coords.latitude && allPlayers[uid].coords.lng === position.coords.longitude)
       return; // no actual change in location
-    you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-    socket.send({ e: "move", uid: uid, loc: {lat: you.location.lat(), lng: you.location.lng() }});
     allPlayers[uid].coords.lat = position.coords.latitude;
-    allPlayers[uid].coords.long = position.coords.longitude;
-    allPlayers[uid].marker.setPosition(you.location);
+    allPlayers[uid].coords.lng = position.coords.longitude;
+    socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords});
+    allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
   });
 }
 
@@ -226,14 +227,14 @@ Ext.setup({
   glossOnIcon: true,
   onReady: function() {
     var launchMissile = function(button, event) {
-      var distance = haversineDistance({lat: target.getPosition().lat(), long: target.getPosition().lng()}, {lat: you.location.lat(), long: you.location.lng() }); // TODO(jeff): change the haversineDistance function to take LatLng by default
+      var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords); // TODO(jeff): change the haversineDistance function to take LatLng by default
       var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (you.inactiveMissiles-1) + " ready missiles left. Continue?";
+      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (allPlayers[uid].readyMissiles-1) + " ready missiles left. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
           socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
-          you.inactiveMissiles--;
-          if (you.inactiveMissiles === 0)
+          allPlayers[uid].readyMissiles--;
+          if (allPlayers[uid].readyMissiles === 0)
             missileButton.disable(true);
         }
       });
@@ -308,7 +309,7 @@ Ext.setup({
     worldMap = new Ext.Map({
       mapOptions: {
         navigationControl: false,
-        center: you.location,
+        center: new google.maps.LatLng(allPlayers[uid].coords.lat, allPlayers[uid].coords.lng),
         zoom: 13,
         mapTypeId: "customMap",
         mapTypeControl: false,
@@ -375,7 +376,7 @@ Ext.setup({
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
-          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
+          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
           socket.send({e: "events", uid: uid});
         }
       },
@@ -422,14 +423,15 @@ Ext.setup({
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(position) {
-    you.location = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+    allPlayers[uid].coords.lat = position.coords.latitude;
+    allPlayers[uid].coords.lng = position.coords.longitude;
     // there is occasionally a weird display bug for this alert
     //if (position.coords.accuracy > 500)
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
-      worldMap.map.setCenter(you.location);
+      worldMap.map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
 
-    socket.send({ e: "init", uid: uid, loc: { lat: you.location.lat(), lng: you.location.lng() }});
+    socket.send({ e: "init", uid: uid, loc: allPlayers[uid].coords });
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
@@ -440,10 +442,10 @@ tick = function() {
     drawMissile(i);
     if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
       if (allMissiles[i].owner === uid)
-        you.inactiveMissiles++;
+        allPlayers[uid].readyMissiles++;
       missileButton.enable(true);
       var c = new google.maps.Circle({
-        center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long),
+        center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.lng),
         fillColor: "#00FFFF",
         fillOpacity: 0.5,
         strokeColor: "#00FFFF",

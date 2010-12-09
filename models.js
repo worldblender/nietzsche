@@ -37,7 +37,7 @@ function nameGenerator() {
 
 function haversineDistance(coords1, coords2) {
   var dLat = (coords2.lat-coords1.lat) * Math.PI / 180;
-  var dLon = (coords2.long-coords1.long) * Math.PI / 180;
+  var dLon = (coords2.lng-coords1.lng) * Math.PI / 180;
   var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(coords1.lat * Math.PI / 180) * Math.cos(coords2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   var d = RAD_TO_METERS * c;
@@ -47,8 +47,8 @@ function haversineDistance(coords1, coords2) {
 function noCallback(err, p) {};
 
 // Models
-exports.Coords = function(long, lat) {
-  this.long = long;
+exports.Coords = function(lng, lat) {
+  this.lng = lng;
   this.lat = lat;
 }
 
@@ -110,6 +110,8 @@ exports.move = function(uid, newLocation, client) {
 
 exports.newName = function(uid, name) {
   db.players.findOne({_id: uid}, function(err, document) {
+    if (!document)
+      return;
     document.name = name;
     db.players.save(document, noCallback);
   });
