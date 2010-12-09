@@ -1,4 +1,4 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile, initialLoc;
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -44,6 +44,7 @@ function numReadyMissiles(m) {
       readyMissiles++;
     }
   }
+  return readyMissiles;
 }
 
 uid = readCookie("uid");
@@ -55,19 +56,19 @@ if (!uid) {
   console.log("retrieved cookie: " + uid);
 }
 
-socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
 socket.on('message', function(obj) {
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
     allPlayers = obj.players;
+    if (initialLoc)
+      allPlayers[uid].coords = initialLoc;
     allMissiles = obj.missiles;
     if (allPlayers[uid].hp <= 0 && worldTopbar)
-      worldTopbar.hide();
+      worldTopbar.disable();
     allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
     if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
-    if (worldMap)
-      populateMap();
+    populateMap();
     setInterval(tick, 900);
   } else if (obj.e === "player") {
     allPlayers[obj.player._id] = obj.player;
@@ -89,7 +90,7 @@ socket.on('message', function(obj) {
         allPlayers[obj.damage[i].player].marker.setMap(null);
         drawPlayer(obj.damage[i].player);
         if (obj.damage[i].player === uid && worldTopbar) {
-          worldTopbar.hide();
+          worldTopbar.disable();
           Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
         }
       }
@@ -121,9 +122,13 @@ socket.on('message', function(obj) {
   }
 });
 
+socket.on('connect', function() {
+  if (initialLoc)
+    socket.send({ e: "init", uid: uid, loc: initialLoc });
+});
 socket.on('disconnect', function() {
   reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
-  setTimeout(connectLoop, 1000);
+  setTimeout(connectLoop, 2000);
 });
 
 function connectLoop() {
@@ -141,8 +146,6 @@ function calcXP(player) {
 }
 
 function drawPlayer(i) {
-  if (!worldMap)
-    return;
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.lng);
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
   if (allPlayers[i].hp > 0) {
@@ -179,7 +182,7 @@ function drawPlayer(i) {
 }
 
 function drawMissile(i) {
-  if (allMissiles[i] === null || !worldMap)
+  if (allMissiles[i] === null)
     return;
   var missileProgress = ((serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime));
   if (missileProgress > 1 || missileProgress < 0)
@@ -304,22 +307,30 @@ Ext.setup({
       /*landmineButton TODO*/]
     });
     if (allPlayers && allPlayers[uid].hp <= 0)
-      worldTopbar.hide();
+      worldTopbar.disable();
 
+    var initialCenter;
+    var mapHide = true;
+    if (initialLoc) {
+      mapHide = false;
+      initialCenter = new google.maps.LatLng(initialLoc.lat, initialLoc.lng);
+    } else {
+      initialCenter = new google.maps.LatLng(47.6063889, -122.3308333); // Seattle
+    }
     worldMap = new Ext.Map({
       mapOptions: {
         navigationControl: false,
-        center: new google.maps.LatLng(allPlayers[uid].coords.lat, allPlayers[uid].coords.lng),
+        center: initialCenter,
         zoom: 13,
+        hidden: mapHide,
         mapTypeId: "customMap",
         mapTypeControl: false,
         streetViewControl: false
       },
       listeners: {
         maprender: function(comp, map) {
+          socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
           map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
-          if (allPlayers && allMissiles)
-            populateMap();
         }
       }
     });
@@ -423,15 +434,18 @@ Ext.setup({
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(position) {
-    allPlayers[uid].coords.lat = position.coords.latitude;
-    allPlayers[uid].coords.lng = position.coords.longitude;
+    if (worldMap)
+      worldMap.show();
+    initialLoc = {lat: position.coords.latitude, lng: position.coords.longitude};
+    if (allPlayers)
+      allPlayers[uid].coords = initialLoc;
     // there is occasionally a weird display bug for this alert
     //if (position.coords.accuracy > 500)
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
       worldMap.map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
-
-    socket.send({ e: "init", uid: uid, loc: allPlayers[uid].coords });
+    if (socket.connected)
+      socket.send({ e: "init", uid: uid, loc: initialLoc });
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
