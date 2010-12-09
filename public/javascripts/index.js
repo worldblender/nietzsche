@@ -52,7 +52,7 @@ socket.on('message', function(obj) {
         inactiveMissiles++;
       }
     }
-    you.inactiveMissiles = inactiveMissiles;
+    you.inactiveMissiles = inactiveMissiles; // TODO: make inactiveMissiles a helper funtion for allPlayers[uid]
     if (inactiveMissiles === 0)
       missileButton.disable(true);
     if (worldMap)
@@ -373,7 +373,8 @@ tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
     if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
-      you.inactiveMissiles++; // TODO(jeff): bug -- everyone gets extra missiles when one explodes
+      if (allMissiles[i].owner === uid)
+        you.inactiveMissiles++;
       missileButton.enable(true);
       var c = new google.maps.Circle({
         center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.long),
