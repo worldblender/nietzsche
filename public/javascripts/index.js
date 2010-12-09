@@ -18,6 +18,15 @@ function haversineDistance(coords1, coords2) {
   return d;  
 }
 
+function getRank(xp) {
+  if (xp < 100)
+    return "Rookie";
+  else if (xp < 200)
+    return "Agent";
+  else if (xp < 400)
+    return "Veteran";
+}
+
 function readCookie(name) {
   var nameEQ = name + "=";
   var ca = document.cookie.split(';');
@@ -116,7 +125,6 @@ function drawPlayer(i) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
-      title: allPlayers[i].name,
       icon: new google.maps.MarkerImage(
         "/images/soldier.png", 
         new google.maps.Size(24, 24),
@@ -128,7 +136,6 @@ function drawPlayer(i) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
-      title: allPlayers[i].name + "'s remains",
       icon: new google.maps.MarkerImage(
         "/images/dead.png", 
         new google.maps.Size(32, 32),
@@ -199,7 +206,7 @@ Ext.setup({
     var launchMissile = function(button, event) {
       var distance = haversineDistance({lat: target.getPosition().lat(), long: target.getPosition().lng()}, {lat: you.location.lat(), long: you.location.lng() }); // TODO(jeff): change the haversineDistance function to take LatLng by default
       var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (you.inactiveMissiles-1) + " inactive missiles remaining. Continue?";
+      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (you.inactiveMissiles-1) + " ready missiles left. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
           socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
@@ -221,7 +228,6 @@ Ext.setup({
           target = new google.maps.Marker({
             position: event.latLng,
             map: worldMap.map,
-            title: "Target",
             icon: new google.maps.MarkerImage(
               "/images/crosshairs.png",
               new google.maps.Size(40, 40),
@@ -334,11 +340,48 @@ Ext.setup({
       listeners: { leafitemtap: onTap }
     });
 
+    var usernameField = new Ext.form.Text({
+      name: "username",
+      label: "Username",
+      required: true
+    });
+
+    var profile = new Ext.Panel({
+      title: "Profile",
+      iconCls: "user",
+      listeners: {
+        activate: function() {
+          usernameField.setValue(allPlayers[uid].name);
+          var myxp = calcXP(allPlayers[uid]);
+          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready");
+        }
+      },
+      items: [{
+        title: "Profile",
+        xtype: "form",
+        id: "profile",
+        scroll: "vertical",
+        items: [
+          usernameField,
+          new Ext.Button({
+            text: 'Save',
+            ui: 'confirm',
+            handler: function() {
+              var newName = usernameField.getValue();
+              if (newName) {
+                allPlayers[uid].name = newName;
+              }
+              socket.send({e: "name", uid: uid, name: newName});
+            }
+          })
+        ]
+      }]
+    });
+
     tabpanel = new Ext.TabPanel({
       fullscreen: true,
       tabBar: {
         dock: 'bottom',
-        hidden: true, // TODO remove this line when for real
         layout: {
           pack: 'center'
         }
@@ -348,7 +391,7 @@ Ext.setup({
         //missions, TODO remove comments when for real
         //shop,
         //team,
-        //{ iconCls: "user", title: "Profile" }
+        profile
       ]
     });
   }

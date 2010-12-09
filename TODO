@@ -6,5 +6,6 @@
 - compress javascript before production http://closure-compiler.appspot.com/
 - handle respawning
 - need iphone icon and screen
+- make the profile page look nicer
 - phonegap wrapper
 - on android, the markers don't render, the app seems frozeny (found open bug, which should be fixed in sencha touch 1.0.1 http://www.sencha.com/forum/showthread.php?111727-OPEN-403-Android-2.2-map-bug/page2)

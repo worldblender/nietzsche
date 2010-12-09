@@ -108,6 +108,13 @@ exports.move = function(uid, newLocation, client) {
   });
 }
 
+exports.newName = function(uid, name) {
+  db.players.findOne({_id: uid}, function(err, document) {
+    document.name = name;
+    db.players.save(document, noCallback);
+  });
+}
+
 exports.Player.prototype.all = function(callback) {
   db.players.find(function(err, cursor) {
     cursor.toArray(function(err, results) {

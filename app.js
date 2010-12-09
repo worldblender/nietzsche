@@ -64,6 +64,8 @@ socket.on('connection', function(client) {
     } else if (obj.e === "move") {
       models.move(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat));
       client.broadcast({player: obj.uid, e: "moved", loc: obj.loc});
+    } else if (obj.e === "name") {
+      models.newName(obj.uid, obj.name);
     }
   });
   client.on('disconnect', function() {
