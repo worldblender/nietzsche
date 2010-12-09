@@ -246,6 +246,9 @@ Ext.setup({
     var attackToggle = function(t, button, pressed) {
       if (button.text == "Attack" && pressed) {
         Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
+        for (var p in allPlayers) {
+          allPlayers[p].marker.setClickable(false);
+        }
 
         targetListener = google.maps.event.addListener(worldMap.map, "click", function(event) {
           if (target) {
@@ -254,6 +257,8 @@ Ext.setup({
           target = new google.maps.Marker({
             position: event.latLng,
             map: worldMap.map,
+            clickable: false,
+            zIndex: 999,
             icon: new google.maps.MarkerImage(
               "/images/crosshairs.png",
               new google.maps.Size(40, 40),
@@ -273,6 +278,9 @@ Ext.setup({
         if (targetListener) {
           google.maps.event.removeListener(targetListener);
           targetListener = null;
+        }
+        for (var p in allPlayers) {
+          allPlayers[p].marker.setClickable(true);
         }
       }
     };

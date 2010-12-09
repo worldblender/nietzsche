@@ -1,7 +1,6 @@
 - "you" should be a different color than the other players
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
 - run through jslint
-- when in attack mode, players should not be clickable
 - make it easier to fire -- info on initial target click
 - compress javascript before production http://closure-compiler.appspot.com/
 - handle respawning
