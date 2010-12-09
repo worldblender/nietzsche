@@ -66,6 +66,11 @@ socket.on('connection', function(client) {
       client.broadcast({player: obj.uid, e: "moved", loc: obj.loc});
     } else if (obj.e === "name") {
       models.newName(obj.uid, obj.name);
+    } else if (obj.e === "events") {
+      models.events(obj.uid, function(events) {
+        console.log("sending events: " + util.inspect(events));
+        client.send(events);
+      });
     }
   });
   client.on('disconnect', function() {

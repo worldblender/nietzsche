@@ -115,6 +115,14 @@ exports.newName = function(uid, name) {
   });
 }
 
+exports.events = function(uid, callback) {
+  db.events.find({uid: uid, e: {$ne: "move"}}, function(err, cursor) {
+    cursor.toArray(function(err, results) {
+      callback({e: "events", events: results});
+    });
+  });
+}
+
 exports.Player.prototype.all = function(callback) {
   db.players.find(function(err, cursor) {
     cursor.toArray(function(err, results) {
@@ -153,8 +161,8 @@ function missileArrived(missile, socket) {
           document.gxp += 100;
           db.players.save(document, noCallback);
           socket.broadcast({e: "gxp", uid: document._id, gxp: 100});
-          db.events.insert({e: "kill", uid: missile.owner, data: obj.uid}, noCallback);
-          db.events.insert({e: "killed", uid: obj.uid, data: missile.owner}, noCallback); // redundant but nice
+          db.events.insert({e: "kill", uid: missile.owner, data: obj._id}, noCallback);
+          db.events.insert({e: "killed", uid: obj._id, data: missile.owner}, noCallback); // redundant but nice
         }
         db.players.save(obj, noCallback);
         dmg.push({player: obj._id, dmg: damage});

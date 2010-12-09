@@ -1,4 +1,4 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox;
+var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile;
 var you = [];
 var socket = new io.Socket();
 
@@ -94,6 +94,28 @@ socket.on('message', function(obj) {
     }
   } else if (obj.e === "gxp") {
     allPlayers[obj.uid].gxp += obj.gxp;
+  } else if (obj.e === "events") {
+    console.log(obj.events.length);
+    var myxp = calcXP(allPlayers[uid]);
+    var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
+    for (var i = 0; i < obj.events.length; i++) {
+      var e = obj.events[i];
+      if (e.e === "missile") {
+        usualStatus += "<br>" + "You launched a missile";
+      } else if (e.e === "kill") {
+        usualStatus += "<br>" + "You killed " + allPlayers[e.data].name;
+      } else if (e.e === "killed") {
+        usualStatus += "<br>" + "You were killed by " + allPlayers[e.data].name;
+      } else if (e.e === "damage") {
+        for (var j = 0; j < e.data.length; j++) {
+          var d = e.data[j];
+          usualStatus += "<br>" + "Your missile did " + d.dmg + " damage to " + allPlayers[d.player].name;
+        }
+      } else if (e.e === "damaged") {
+        usualStatus += "<br>" + "You took " + e.data + " damage from a missile";
+      }
+    }
+    profile.update(usualStatus);
   }
 });
 
@@ -346,7 +368,7 @@ Ext.setup({
       required: true
     });
 
-    var profile = new Ext.Panel({
+    profile = new Ext.Panel({
       title: "Profile",
       iconCls: "user",
       listeners: {
@@ -354,6 +376,7 @@ Ext.setup({
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
           profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
+          socket.send({e: "events", uid: uid});
         }
       },
       items: [{
