@@ -353,7 +353,7 @@ Ext.setup({
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
-          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready");
+          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + you.inactiveMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
         }
       },
       items: [{
