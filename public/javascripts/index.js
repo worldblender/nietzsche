@@ -57,6 +57,7 @@ if (!uid) {
 }
 
 socket.on('message', function(obj) {
+  console.log(obj);
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
     allPlayers = obj.players;
@@ -98,7 +99,6 @@ socket.on('message', function(obj) {
   } else if (obj.e === "gxp") {
     allPlayers[obj.uid].gxp += obj.gxp;
   } else if (obj.e === "events") {
-    console.log(obj.events.length);
     var myxp = calcXP(allPlayers[uid]);
     var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
     for (var i = 0; i < obj.events.length; i++) {
