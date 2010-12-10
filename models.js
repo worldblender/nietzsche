@@ -52,19 +52,6 @@ exports.Coords = function(lng, lat) {
   this.lat = lat;
 }
 
-exports.Player = function(uid, coords, callback) {
-  this._id = uid; // TODO(jeff): check uniqueness
-  this.hp = INITIAL_HP;
-  this.gxp = 0; // gxp is gained XP. total XP = gxp + minutesAlive
-  this.coords = coords; // TODO(jeff): check validity
-  this.items = { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 };
-  this.aliveSince = (new Date()).getTime() + 0.01;
-  this.name = nameGenerator();
-  db.players.insert(this, callback);
-  db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
-  return this;
-}
-
 exports.Missile = function(uid, arrivalCoords, socket, callback) {
   var m = this;
   m.owner = uid;
@@ -97,11 +84,35 @@ exports.Missile = function(uid, arrivalCoords, socket, callback) {
   });
 }
 
+exports.init = function(uid, coords, initCallback, moveCallback) {
+  db.players.findOne({_id: uid}, function(err, document) {
+    if (document) {
+      document.coords = coords;
+      db.players.save(document, moveCallback);
+      db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
+    } else {
+      var newPlayer = {
+        _id: uid,
+        hp: INITIAL_HP,
+        gxp: 0,
+        coords: coords,
+        items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 },
+        aliveSince: (new Date()).getTime() + 0.01,
+        name: nameGenerator()
+      };
+      db.players.insert(newPlayer, initCallback);
+      db.events.insert({e: "init", uid: uid, data: coords});
+    }
+  });
+}
+
 exports.move = function(uid, newLocation, client) {
   // TODO(jeff): check validity of newLocation
   db.players.findOne({_id: uid}, function(err, document) {
-    if (!document)
+    if (!document) {
+      console.log("Error: called 'move' with invalid uid. uid: " + uid + " newLocation: " + newLocation);
       return;
+    }
     document.coords = newLocation;
     db.players.save(document, noCallback);
     db.events.insert({e: "move", uid: uid, data: newLocation}, noCallback);
@@ -110,8 +121,10 @@ exports.move = function(uid, newLocation, client) {
 
 exports.newName = function(uid, name) {
   db.players.findOne({_id: uid}, function(err, document) {
-    if (!document)
+    if (!document) {
+      console.log("Error: called 'newName' with invalid uid. uid: " + uid + " name: " + name);
       return;
+    }
     document.name = name;
     db.players.save(document, noCallback);
   });
@@ -125,7 +138,7 @@ exports.events = function(uid, callback) {
   });
 }
 
-exports.Player.prototype.all = function(callback) {
+exports.getAllPlayers = function(callback) {
   db.players.find(function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);
@@ -133,7 +146,7 @@ exports.Player.prototype.all = function(callback) {
   });
 }
 
-exports.Missile.prototype.all = function(callback) {
+exports.getAllMissiles = function(callback) {
   db.missiles.find({arrivalTime: {$gt: (new Date()).getTime()}}, function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);

@@ -27,8 +27,8 @@ if (!module.parent) {
 
 function sync(client, uid) {
   // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
-  models.Missile.prototype.all(function(err, missileResults) {
-    models.Player.prototype.all(function(err, playerResults) {
+  models.getAllMissiles(function(err, missileResults) {
+    models.getAllPlayers(function(err, playerResults) {
       var playerDict = {};
       for (var i in playerResults) {
         playerDict[playerResults[i]._id] = playerResults[i];
@@ -50,11 +50,13 @@ socket.on('connection', function(client) {
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
-      // TODO(jeff): make it so it only creates a new Player if it really is a new player...
-      var p = new models.Player(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, docs) {
+      models.init(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, result) {
         sync(client, obj.uid);
+        client.broadcast({e: "player", player: p});
+      }, function(err, result) {
+        sync(client, obj.uid);
+        client.broadcast({player: obj.uid, e: "moved", loc: obj.loc});
       });
-      client.broadcast({e: "player", player: p}); // tell everyone else I am here
     } else if (obj.e === "m") {
       // TODO(jeff): catch errors like player has no missiles to launch, then send an error msg back to the client
       new models.Missile(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), socket, function(m) {
