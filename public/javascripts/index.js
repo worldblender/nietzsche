@@ -146,29 +146,34 @@ function calcXP(player) {
 }
 
 function drawPlayer(i) {
+  if (!this.soldier)
+    this.soldier = new google.maps.MarkerImage(
+      "/images/soldier.png", 
+      new google.maps.Size(24, 24),
+      new google.maps.Point(0, 0),
+      new google.maps.Point(12, 12)
+    );
+  if (!this.dead)
+    this.dead = new google.maps.MarkerImage(
+      "/images/dead.png", 
+      new google.maps.Size(32, 32),
+      new google.maps.Point(0, 0),
+      new google.maps.Point(16, 16)
+    );
+
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.lng);
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
-      icon: new google.maps.MarkerImage(
-        "/images/soldier.png", 
-        new google.maps.Size(24, 24),
-        new google.maps.Point(0, 0),
-        new google.maps.Point(12, 12)
-      )
+      icon: this.soldier
     });
   } else {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
-      icon: new google.maps.MarkerImage(
-        "/images/dead.png", 
-        new google.maps.Size(32, 32),
-        new google.maps.Point(0, 0),
-        new google.maps.Point(16, 16)
-      )
+      icon: this.dead
     });
   }
   allPlayers[i].marker.info = allPlayers[i];
@@ -254,17 +259,19 @@ Ext.setup({
           if (target) {
             target.setMap(null); // clear previous marker
           }
+          if (!this.crosshairs)
+            this.crosshairs = new google.maps.MarkerImage(
+              "/images/crosshairs.png",
+              new google.maps.Size(40, 40),
+              new google.maps.Point(0, 0),
+              new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
+            );
           target = new google.maps.Marker({
             position: event.latLng,
             map: worldMap.map,
             clickable: false,
             zIndex: 999,
-            icon: new google.maps.MarkerImage(
-              "/images/crosshairs.png",
-              new google.maps.Size(40, 40),
-              new google.maps.Point(0, 0),
-              new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
-            )
+            icon: this.crosshairs
           });
           missileButton.show();
           //landmineButton.show(); TODO
