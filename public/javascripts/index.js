@@ -469,10 +469,10 @@ if (navigator.geolocation) {
 tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
-    if (allMissiles[i] && serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
+    if (allMissiles[i] && (serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime)) { // an alternative approach is setTimeout when you launch the missile
+      allMissiles[i].line.setMap(null);
       if (allMissiles[i].owner === uid)
         allPlayers[uid].readyMissiles++;
-      missileButton.enable(true);
       var c = new google.maps.Circle({
         center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.lng),
         fillColor: "#00FFFF",
@@ -482,6 +482,8 @@ tick = function() {
         clickable: false,
         radius: 0
       });
+      allMissiles[i] = null;
+      missileButton.enable(true);
       var r = 0;
       var intvl = setInterval(function() {
         if (r >= 400 && r % 2 === 0) // TODO(jeff): make this the constant / variable
@@ -497,8 +499,6 @@ tick = function() {
         }
         c.setRadius(r);
       }, 500);
-      allMissiles[i].line.setMap(null);
-      allMissiles[i] = null;
     }
   }
 }
