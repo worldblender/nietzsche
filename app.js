@@ -14,7 +14,7 @@ var models = require('./models');
 // Configuration
 
 app.configure(function(){
-//  app.use(express.gzip()); TODO(jeff): I can get big wins from using gzip compression, but sencha_touch.js doesn't load if I do  (clear web browser history first) for some reason
+//  app.use(express.gzip()); TODO(jeff): I can get big wins from using gzip compression, but sencha_touch.js doesn't load if I do (clear web browser history first) for some reason
   app.use(express.staticProvider(__dirname + '/public'));
 });
 

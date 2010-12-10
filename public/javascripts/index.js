@@ -1,4 +1,4 @@
-var tabpanel, target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile, initialLoc;
+var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile, initialLoc;
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -100,7 +100,7 @@ socket.on('message', function(obj) {
     allPlayers[obj.uid].gxp += obj.gxp;
   } else if (obj.e === "events") {
     var myxp = calcXP(allPlayers[uid]);
-    var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
+    var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills $" + allPlayers[uid].items.c + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
     for (var i = 0; i < obj.events.length; i++) {
       var e = obj.events[i];
       if (e.e === "missile") {
@@ -235,7 +235,7 @@ Ext.setup({
   glossOnIcon: true,
   onReady: function() {
     var launchMissile = function(button, event) {
-      var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords); // TODO(jeff): change the haversineDistance function to take LatLng by default
+      var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
       var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
       var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (allPlayers[uid].readyMissiles-1) + " ready missiles left. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
@@ -402,7 +402,7 @@ Ext.setup({
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
-          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills " + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
+          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills $" + allPlayers[uid].items.c + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
           socket.send({e: "events", uid: uid});
         }
       },
@@ -428,7 +428,7 @@ Ext.setup({
       }]
     });
 
-    tabpanel = new Ext.TabPanel({
+    new Ext.TabPanel({
       fullscreen: true,
       tabBar: {
         dock: 'bottom',
