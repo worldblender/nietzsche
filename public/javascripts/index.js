@@ -190,7 +190,7 @@ socket.on('message', function(obj) {
     for (var k = 0; k < obj.events.length; k++) {
       var e = obj.events[k];
       var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
-      eventHtml += "<br>" + ts.getMonth() + "/" + ts.getDate() + " " + ts.getHours() + ":" + ts.getMinutes() + ":" + ts.getSeconds() + " ";
+      eventHtml += "<br><font color='grey'>" + ts.getMonth() + "/" + ts.getDate() + " " + ts.getHours() + ":" + (ts.getMinutes() < 10 ? '0' : '') + ts.getMinutes() + ":" + (ts.getSeconds() < 10 ? '0' : '') + ts.getSeconds() + "</font> ";
       if (e.e === "missile") {
         eventHtml += "Launched missile <img src='/images/level.png'>";
       } else if (e.e === "kill") {
