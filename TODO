@@ -1,4 +1,5 @@
 - "you" should be a different color than the other players
+- profile page events should be sorted
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
 - run through jslint
 - make it easier to fire -- info on initial target click
