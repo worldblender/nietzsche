@@ -467,6 +467,7 @@ Ext.setup({
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
+          // TODO(jeff): calculating kills method is a hack
           var statusHtml = "<table><tr><td>" +
             "<img src='/images/health.png'> " +
               allPlayers[uid].hp + " / 100<br></td><td>" +
