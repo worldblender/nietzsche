@@ -239,23 +239,17 @@ Ext.setup({
   glossOnIcon: true,
   onReady: function() {
     var launchMissile = function(button, event) {
-      var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
-      var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. Continue?";
-      Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
-        if (buttonId === "yes") {
-          socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
-          allPlayers[uid].readyMissiles--;
-          missileButton.setBadge(allPlayers[uid].readyMissiles);
-          if (allPlayers[uid].readyMissiles === 0)
-            missileButton.disable(true);
-        }
-      });
+      socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
+      allPlayers[uid].readyMissiles--;
+      missileButton.setBadge(allPlayers[uid].readyMissiles);
+      if (allPlayers[uid].readyMissiles === 0)
+        missileButton.disable(true);
     };
 
     var attackToggle = function(t, button, pressed) {
       if (button.text == "Attack" && pressed) {
-        Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
+        //Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
+        worldTopbar.setTitle("Tap target");
         for (var p in allPlayers) {
           allPlayers[p].marker.setClickable(false);
         }
@@ -275,14 +269,18 @@ Ext.setup({
             position: event.latLng,
             map: worldMap.map,
             clickable: false,
-            zIndex: 999,
+            zIndex: 9999,
             icon: this.crosshairs
           });
           missileButton.show();
+          var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
+          var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
+          worldTopbar.setTitle(Math.round(distance) + " meters (" + Math.round(duration) + "s)");
           //landmineButton.show(); TODO
         });
       } else {
         missileButton.hide();
+        worldTopbar.setTitle("");
         //landmineButton.hide(); TODO
         if (target) {
           target.setMap(null);
@@ -321,6 +319,8 @@ Ext.setup({
         //}, {   TODO(jeff): remove when adding this
         //  text: 'Defense',
         }]
+      }, {
+        xtype: 'spacer'
       }, {
         xtype: 'spacer'
       },
