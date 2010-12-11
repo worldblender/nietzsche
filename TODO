@@ -1,5 +1,4 @@
 - "you" should be a different color than the other players
-- RELEASE1 profile page events should be sorted
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
 - run through jslint
 - make it easier to fire -- info on initial target click
@@ -8,3 +7,4 @@
 - need iphone icon and screen
 - V1 phonegap wrapper (uuid, new missile speeds/accel)
 - V1 on android, the markers don't render, the app seems frozeny (found open bug, which should be fixed in sencha touch 1.0.1 http://www.sencha.com/forum/showthread.php?111727-OPEN-403-Android-2.2-map-bug/page2)
+- switching everything that's stored in memory into localStorage! (doesn't require as much sync?)

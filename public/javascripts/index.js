@@ -26,17 +26,6 @@ function getRank(xp) {
     return "Veteran";
 }
 
-function readCookie(name) {
-  var nameEQ = name + "=";
-  var ca = document.cookie.split(';');
-  for(var i=0;i < ca.length;i++) {
-    var c = ca[i];
-    while (c.charAt(0)===' ') c = c.substring(1,c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
-  }
-  return null;
-}
-
 function calcXP(player) {
   return Math.floor((serverTimeDiff + (new Date()).getTime() - player.aliveSince) / 60000) + player.gxp; // 1 XP per minute + gainedXP
 }
@@ -125,11 +114,11 @@ function drawMissile(i) {
   }
 }
 
-uid = readCookie("uid");
+uid = localStorage["uid"];
 if (!uid) {
   uid = Math.random().toString().substring(2); // TODO(jeff): use the device.uuid from phonegap for mobile apps
   console.log("created new cookie: " + uid);
-  document.cookie = "uid=" + uid + "; expires=Wed, 1 Jan 2020 01:00:00 UTC; path=/";
+  localStorage["uid"] = uid;
 } else {
   console.log("retrieved cookie: " + uid);
 }
@@ -201,7 +190,7 @@ socket.on('message', function(obj) {
         eventHtml += "Your missile hit";
         for (var j = 0; j < e.data.length; j++) {
           var d = e.data[j];
-          eventHtml += " " + allPlayers[d.player].name + " (-" + d.dmg + " <img src='/images/energy.png'>)";
+          eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='/images/energy.png'>)";
         }
       } else if (e.e === "damaged") {
         eventHtml += "Hit by missile (-" + e.data + " <img src='/images/health.png'>)";
