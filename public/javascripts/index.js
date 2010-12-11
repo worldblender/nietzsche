@@ -178,7 +178,7 @@ socket.on('message', function(obj) {
   } else if (obj.e === "gxp") {
     allPlayers[obj.uid].gxp += obj.gxp;
   } else if (obj.e === "events") {
-    var eventHtml = "<b>Recent events</b>";
+    var eventHtml = "<font size='-1'><b>Recent events</b>";
     for (var k = 0; k < obj.events.length; k++) {
       var e = obj.events[k];
       var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
@@ -199,6 +199,7 @@ socket.on('message', function(obj) {
         eventHtml += "Hit by missile (-" + e.data + " <img src='/images/health.png'>)";
       }
     }
+    eventHtml += "</font>";
     eventPane.update(eventHtml);
   }
 });
