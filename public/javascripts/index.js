@@ -68,7 +68,7 @@ function alive() {
   socket.send({e: "respawn", uid: uid});
 }
 
-function drawPlayer(i) {
+function drawPlayer(i, dropAnimation) {
   if (!this.soldier)
     this.soldier = new google.maps.MarkerImage(
       "/images/soldier.png", 
@@ -86,13 +86,19 @@ function drawPlayer(i) {
     );
 
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.lng);
+  var dropAnim = null;
+  if (dropAnimation)
+    dropAnim = google.maps.Animation.DROP;
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap.map,
+      animation: dropAnim,
       icon: this.soldier
     });
+    if (i === uid)
+      allPlayers[i].marker.setAnimation(google.maps.Animation.BOUNCE);
   } else {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
@@ -171,7 +177,7 @@ socket.on('message', function(obj) {
     setInterval(tick, TICK_INTERVAL);
   } else if (obj.e === "player") {
     allPlayers[obj.player._id] = obj.player;
-    drawPlayer(obj.player._id);
+    drawPlayer(obj.player._id, true);
   } else if (obj.e === "missile") {
     var len = allMissiles.push(obj.missile);
   } else if (obj.e === "moved") {
@@ -234,7 +240,7 @@ socket.on('message', function(obj) {
     missileButton.setBadge(allPlayers[uid].readyMissiles);
     //if (allPlayers[uid].readyMissiles === 0)
     //  missileButton.disable(true);
-    drawPlayer(uid);
+    drawPlayer(uid, true);
   }
 });
 
