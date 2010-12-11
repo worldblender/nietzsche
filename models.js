@@ -85,6 +85,15 @@ exports.Missile = function(uid, arrivalCoords, socket, callback) {
 }
 
 exports.init = function(uid, coords, initCallback, moveCallback) {
+  var newPlayer = {
+    _id: uid,
+    hp: INITIAL_HP,
+    gxp: 0,
+    coords: coords,
+    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 },
+    aliveSince: (new Date()).getTime() + 0.01,
+    name: nameGenerator()
+  };
   db.players.findOne({_id: uid}, function(err, document) {
     if (document) {
       if (document.hp > 0) { // don't move if you're dead
@@ -93,19 +102,11 @@ exports.init = function(uid, coords, initCallback, moveCallback) {
         db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
       }
     } else {
-      var newPlayer = {
-        _id: uid,
-        hp: INITIAL_HP,
-        gxp: 0,
-        coords: coords,
-        items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, c: 5 },
-        aliveSince: (new Date()).getTime() + 0.01,
-        name: nameGenerator()
-      };
       db.players.insert(newPlayer, initCallback);
       db.events.insert({e: "init", uid: uid, data: coords});
     }
   });
+  return newPlayer;
 }
 
 exports.move = function(uid, newLocation, client) {
