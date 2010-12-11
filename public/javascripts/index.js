@@ -19,11 +19,13 @@ function haversineDistance(coords1, coords2) {
 
 function getRank(xp) {
   if (xp < 100)
+    return "Trainee";
+  else if (xp < 300)
     return "Rookie";
-  else if (xp < 250)
+  else if (xp < 1000)
     return "Agent";
-  else if (xp < 500)
-    return "Veteran";
+  else
+    return "Professional";
 }
 
 function calcXP(player) {
