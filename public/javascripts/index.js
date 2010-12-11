@@ -399,7 +399,7 @@ Ext.setup({
     });
 
     var statusPane = new Ext.Container();
-    eventPane = new Ext.Container();
+    eventPane = new Ext.Container({ html: "<b><font size='-1'>Recent events</font></b>" });
 
     var profile = new Ext.Panel({
       title: "Profile",
@@ -475,6 +475,9 @@ Ext.setup({
         profile
       ]
     });
+
+    Ext.Msg.enterAnimation = false;
+    Ext.Msg.exitAnimation = false;
   }
 });
 
@@ -485,7 +488,7 @@ if (navigator.geolocation) {
     yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
     if (allPlayers && allPlayers[uid].hp > 0)
       allPlayers[uid].coords = yourLocation;
-    // there is occasionally a weird display bug for this alert
+    // there is occasionally a weird display bug for this alert, crunching this all up into one
     //if (position.coords.accuracy > 500)
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
