@@ -183,10 +183,12 @@ function missileArrived(missile, socket) {
         if (obj.hp <= 0) {
           obj.hp = 0;
           obj.aliveSince = null;
-          document.gxp += 100;
-          db.players.save(document, noCallback);
-          socket.broadcast({e: "gxp", uid: document._id, gxp: 100});
-          db.events.insert({e: "kill", uid: missile.owner, data: obj._id}, noCallback);
+          if (obj._id !== document._id) {
+            document.gxp += 100;
+            db.players.save(document, noCallback);
+            socket.broadcast({e: "gxp", uid: document._id, gxp: 100});
+            db.events.insert({e: "kill", uid: missile.owner, data: obj._id}, noCallback);
+          }
           db.events.insert({e: "killed", uid: obj._id, data: missile.owner}, noCallback); // redundant but nice
         }
         db.players.save(obj, noCallback);
@@ -199,6 +201,15 @@ function missileArrived(missile, socket) {
         db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
       }
     });
+  });
+}
+
+exports.respawn = function(uid, callback) {
+  db.players.findOne({_id: uid}, function(err, document) {
+    document.hp = INITIAL_HP;
+    document.aliveSince = (new Date()).getTime() + 0.01;
+    db.players.save(document, callback);
+    db.events.insert({e: "respawn", uid: uid}, noCallback);
   });
 }
 

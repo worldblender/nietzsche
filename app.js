@@ -73,6 +73,10 @@ socket.on('connection', function(client) {
         console.log("sending events: " + util.inspect(events));
         client.send(events);
       });
+    } else if (obj.e === "respawn") {
+      models.respawn(obj.uid, function(err, document) {
+        socket.broadcast({e: "respawn", player: document});
+      });
     }
   });
   client.on('disconnect', function() {

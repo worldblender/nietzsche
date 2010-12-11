@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation;
+var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, attackToggle, respawnButton;
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -51,6 +51,18 @@ function connectLoop() {
     setTimeout(connectLoop, 2000);
     socket.connect();
   }
+}
+
+function killed() {
+  attackToggle(null, "Attack", false);
+  actionButtons.setPressed(attackButton, false);
+  attackButton.disable(true);
+  worldTopbar.setTitle("You died");
+  respawnButton.show();
+}
+
+function alive() {
+  socket.send({e: "respawn", uid: uid});
 }
 
 function drawPlayer(i) {
@@ -147,8 +159,7 @@ socket.on('message', function(obj) {
     }
     allMissiles = obj.missiles;
     if (allPlayers[uid].hp <= 0 && worldTopbar) {
-      worldTopbar.disable();
-      worldTopbar.setTitle("You died");
+      killed();
     }
     allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
     missileButton.setBadge(allPlayers[uid].readyMissiles);
@@ -176,8 +187,7 @@ socket.on('message', function(obj) {
         allPlayers[obj.damage[i].player].aliveSince = null;
         drawPlayer(obj.damage[i].player);
         if (obj.damage[i].player === uid && worldTopbar) {
-          worldTopbar.disable();
-          worldTopbar.setTitle("You died");
+          killed();
           Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
         }
       }
@@ -204,9 +214,25 @@ socket.on('message', function(obj) {
         }
       } else if (e.e === "damaged") {
         eventHtml += "Hit by missile (-" + e.data + " <img src='/images/health.png'>)";
+      } else if (e.e === "respawn") {
+        eventHtml += "Respawned";
       }
     }
     eventPane.update(eventHtml);
+  } else if (obj.e === "respawn") {
+    if (uid === obj.player._id) {
+      respawnButton.hide();
+      attackButton.enable(true);
+      worldTopbar.setTitle("");
+    }
+    if (allPlayers[uid].marker)
+      allPlayers[uid].marker.setMap(null);
+    allPlayers[uid] = obj.player;
+    allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
+    missileButton.setBadge(allPlayers[uid].readyMissiles);
+    //if (allPlayers[uid].readyMissiles === 0)
+    //  missileButton.disable(true);
+    drawPlayer(uid);
   }
 });
 
@@ -254,12 +280,13 @@ Ext.setup({
         missileButton.disable(true);
     };
 
-    var attackToggle = function(t, button, pressed) {
+    attackToggle = function(t, button, pressed) {
       if (button.text == "Attack" && pressed) {
         //Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
         worldTopbar.setTitle("Tap target");
         for (var p in allPlayers) {
-          allPlayers[p].marker.setClickable(false);
+          if (allPlayers[p].marker)
+            allPlayers[p].marker.setClickable(false);
         }
 
         targetListener = google.maps.event.addListener(worldMap.map, "click", function(event) {
@@ -298,7 +325,8 @@ Ext.setup({
           targetListener = null;
         }
         for (var p in allPlayers) {
-          allPlayers[p].marker.setClickable(true);
+          if (allPlayers[p].marker)
+            allPlayers[p].marker.setClickable(true);
         }
       }
     };
@@ -310,34 +338,47 @@ Ext.setup({
       handler: launchMissile
     });
     missileButton.setWidth(84);
+
+    respawnButton = new Ext.Button({
+      text: 'Respawn',
+      hidden: true,
+      handler: alive,
+      ui: 'confirm'
+    });
     /*landmineButton = new Ext.Button({
       text: 'Landmine',
       hidden: true,
       ui: 'action'
     }); TODO(jeff): remove comment when adding this */
 
+    attackButton = new Ext.Button({
+      text: 'Attack',
+      ui: 'action'
+    });
+
+    actionButtons = new Ext.SegmentedButton({
+      allowDepress: true,
+      listeners: { toggle: attackToggle },
+      items: [ attackButton ]
+    });
+
     worldTopbar = new Ext.Toolbar({
       dock: 'top',
-      items: [{
-        xtype: 'segmentedbutton',
-        allowDepress: true,
-        listeners: { toggle: attackToggle },
-        items: [{
-          text: 'Attack'
+      items: [
+        actionButtons,
         //}, {   TODO(jeff): remove when adding this
         //  text: 'Defense',
-        }]
-      }, {
+      {
         xtype: 'spacer'
       }, {
         xtype: 'spacer'
       },
-      missileButton
+      missileButton,
+      respawnButton
       /*landmineButton TODO*/]
     });
     if (allPlayers && allPlayers[uid].hp <= 0) {
-      worldTopbar.disable();
-      worldTopbar.setTitle("You died");
+      killed();
     }
 
     var initialCenter;
@@ -524,7 +565,8 @@ tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
     drawMissile(i);
     if (allMissiles[i] && (serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime)) { // an alternative approach is setTimeout when you launch the missile
-      allMissiles[i].line.setMap(null);
+      if (allMissiles[i].line)
+        allMissiles[i].line.setMap(null);
       if (allMissiles[i].owner === uid) {
         allPlayers[uid].readyMissiles++;
         missileButton.setBadge(allPlayers[uid].readyMissiles);
