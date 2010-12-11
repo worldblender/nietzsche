@@ -87,9 +87,11 @@ exports.Missile = function(uid, arrivalCoords, socket, callback) {
 exports.init = function(uid, coords, initCallback, moveCallback) {
   db.players.findOne({_id: uid}, function(err, document) {
     if (document) {
-      document.coords = coords;
-      db.players.save(document, moveCallback);
-      db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
+      if (document.hp > 0) { // don't move if you're dead
+        document.coords = coords;
+        db.players.save(document, moveCallback);
+        db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
+      }
     } else {
       var newPlayer = {
         _id: uid,
@@ -111,6 +113,10 @@ exports.move = function(uid, newLocation, client) {
   db.players.findOne({_id: uid}, function(err, document) {
     if (!document) {
       console.log("Error: called 'move' with invalid uid. uid: " + uid + " newLocation: " + newLocation);
+      return;
+    }
+    if (document.hp <= 0) {
+      console.log("Error: dead player wanted to 'move'. uid: " + uid + " newLocation: " + newLocation);
       return;
     }
     document.coords = newLocation;

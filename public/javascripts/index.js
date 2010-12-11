@@ -145,8 +145,6 @@ socket.on('message', function(obj) {
       }
     }
     allPlayers = obj.players;
-    if (yourLocation)
-      allPlayers[uid].coords = yourLocation;
     if (allMissiles) {
       for (var m = 0; m < allMissiles.length; ++m) {
         if (allMissiles[m] && allMissiles[m].line)
@@ -232,13 +230,15 @@ populateMap = function() {
   }
 
   navigator.geolocation.watchPosition(function(position) {
-    if (allPlayers[uid].coords.lat === position.coords.latitude && allPlayers[uid].coords.lng === position.coords.longitude)
+    if (yourLocation.lat === position.coords.latitude && yourLocation.lng === position.coords.longitude)
       return; // no actual change in location
     yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
-    allPlayers[uid].coords.lat = position.coords.latitude;
-    allPlayers[uid].coords.lng = position.coords.longitude;
-    socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords });
-    allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+    if (allPlayers[uid].hp > 0) {
+      allPlayers[uid].coords.lat = position.coords.latitude;
+      allPlayers[uid].coords.lng = position.coords.longitude;
+      socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords });
+      allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+    }
   });
 };
 
@@ -494,7 +494,7 @@ if (navigator.geolocation) {
     if (worldMap)
       worldMap.show();
     yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
-    if (allPlayers)
+    if (allPlayers && allPlayers[uid].hp > 0)
       allPlayers[uid].coords = yourLocation;
     // there is occasionally a weird display bug for this alert
     //if (position.coords.accuracy > 500)
