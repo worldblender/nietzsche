@@ -181,7 +181,7 @@ socket.on('message', function(obj) {
       var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
       eventHtml += "<br><font color='grey'>" + ts.getMonth() + "/" + ts.getDate() + " " + ts.getHours() + ":" + (ts.getMinutes() < 10 ? '0' : '') + ts.getMinutes() + ":" + (ts.getSeconds() < 10 ? '0' : '') + ts.getSeconds() + "</font> ";
       if (e.e === "missile") {
-        eventHtml += "Launched missile <img src='/images/level.png'>";
+        eventHtml += "Launched missile <img src='/images/missile.png'>";
       } else if (e.e === "kill") {
         eventHtml += "Killed " + allPlayers[e.data].name + " <img src='/images/stamina.png'>";
       } else if (e.e === "killed") {
@@ -409,17 +409,17 @@ Ext.setup({
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
           var statusHtml = "<table><tr><td>" +
-            "<img src='/images/health.png'>" +
+            "<img src='/images/health.png'> " +
               allPlayers[uid].hp + " / 100<br></td><td>" +
-            "<img src='/images/level.png'>" +
+            "<img src='/images/missile.png'> " +
               allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
-            "<img src='/images/xp.png'>" +
+            "<img src='/images/xp.png'> " +
               myxp + "xp (" + getRank(myxp) + ")<br></td><td>" +
-            "<img src='/images/energy.png'>" +
+            "<img src='/images/energy.png'> " +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
-            "<img src='/images/stamina.png'>" +
+            "<img src='/images/stamina.png'> " +
               allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
-            "<img src='/images/attack.png'>" +
+            "<img src='/images/attack.png'> " +
               allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
           statusPane.update(statusHtml);
           socket.send({e: "events", uid: uid});

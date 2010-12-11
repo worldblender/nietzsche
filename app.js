@@ -50,7 +50,7 @@ socket.on('connection', function(client) {
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
-      var p = models.init(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function(err, result) {
+      var p = models.init(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function() {
         sync(client, obj.uid);
         client.broadcast({e: "player", player: p});
       }, function(err, result) {

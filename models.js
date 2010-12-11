@@ -100,6 +100,8 @@ exports.init = function(uid, coords, initCallback, moveCallback) {
         document.coords = coords;
         db.players.save(document, moveCallback);
         db.events.insert({e: "move", uid: uid, data: coords}, noCallback);
+      } else {
+        moveCallback();
       }
     } else {
       db.players.insert(newPlayer, initCallback);
