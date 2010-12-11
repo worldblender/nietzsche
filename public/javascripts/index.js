@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, profile, initialLoc;
+var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, statusPane, initialLoc;
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -100,25 +100,37 @@ socket.on('message', function(obj) {
     allPlayers[obj.uid].gxp += obj.gxp;
   } else if (obj.e === "events") {
     var myxp = calcXP(allPlayers[uid]);
-    var usualStatus = allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills $" + allPlayers[uid].items.c + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius";
+    var statusHtml = "<table><tr><td>" +
+      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/health.png'>" +
+        allPlayers[uid].hp + " / 100<br></td><td>" +
+      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/level.png'>" +
+        allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
+      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/xp.png'>" +
+        myxp + "xp (" + getRank(myxp) + ")<br></td><td>" +
+      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/energy.png'>" +
+        allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
+      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/stamina.png'>" +
+        allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
+      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/attack.png'>" +
+        allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
     for (var i = 0; i < obj.events.length; i++) {
       var e = obj.events[i];
       if (e.e === "missile") {
-        usualStatus += "<br>" + "You launched a missile";
+        statusHtml += "<br>" + "You launched a missile";
       } else if (e.e === "kill") {
-        usualStatus += "<br>" + "You killed " + allPlayers[e.data].name;
+        statusHtml += "<br>" + "You killed " + allPlayers[e.data].name;
       } else if (e.e === "killed") {
-        usualStatus += "<br>" + "You were killed by " + allPlayers[e.data].name;
+        statusHtml += "<br>" + "You were killed by " + allPlayers[e.data].name;
       } else if (e.e === "damage") {
         for (var j = 0; j < e.data.length; j++) {
           var d = e.data[j];
-          usualStatus += "<br>" + "Your missile did " + d.dmg + " damage to " + allPlayers[d.player].name;
+          statusHtml += "<br>" + "Your missile did " + d.dmg + " damage to " + allPlayers[d.player].name;
         }
       } else if (e.e === "damaged") {
-        usualStatus += "<br>" + "You took " + e.data + " damage from a missile";
+        statusHtml += "<br>" + "You took " + e.data + " damage from a missile";
       }
     }
-    profile.update(usualStatus);
+    statusPane.update(statusHtml);
   }
 });
 
@@ -391,18 +403,33 @@ Ext.setup({
 
     var usernameField = new Ext.form.Text({
       name: "username",
-      label: "Username",
+      label: "Name",
       required: true
     });
 
-    profile = new Ext.Panel({
+    statusPane = new Ext.Container();
+
+    var profile = new Ext.Panel({
       title: "Profile",
       iconCls: "user",
       listeners: {
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
-          profile.update(allPlayers[uid].hp + "hp " + myxp + "xp " + allPlayers[uid].gxp / 100 + "kills $" + allPlayers[uid].items.c + getRank(myxp) + " " + allPlayers[uid].readyMissiles + " missiles ready<br>Your missiles do up to " + allPlayers[uid].items.m.d + "damage in a " + allPlayers[uid].items.m.r + "m radius");
+          var statusHtml = "<table><tr><td>" +
+            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/health.png'>" +
+              allPlayers[uid].hp + " / 100<br></td><td>" +
+            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/level.png'>" +
+              allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
+            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/xp.png'>" +
+              myxp + "xp (" + getRank(myxp) + ")<br></td><td>" +
+            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/energy.png'>" +
+              allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
+            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/stamina.png'>" +
+              allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
+            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/attack.png'>" +
+              allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
+          statusPane.update(statusHtml);
           socket.send({e: "events", uid: uid});
         }
       },
@@ -413,9 +440,14 @@ Ext.setup({
         scroll: "vertical",
         items: [
           usernameField,
-          new Ext.Button({
+          {
+            xtype: 'spacer',
+            height: 10
+          }, {
+            xtype: 'button',
             text: 'Save',
             ui: 'confirm',
+            width: 100,
             handler: function() {
               var newName = usernameField.getValue();
               if (newName) {
@@ -423,7 +455,11 @@ Ext.setup({
               }
               socket.send({e: "name", uid: uid, name: newName});
             }
-          })
+          }, {
+            xtype: 'spacer',
+            height: 10
+          },
+          statusPane
         ]
       }]
     });
