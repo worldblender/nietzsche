@@ -144,6 +144,7 @@ socket.on('message', function(obj) {
     if (allPlayers[uid].hp <= 0 && worldTopbar)
       worldTopbar.disable();
     allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
+    missileButton.setBadge(allPlayers[uid].readyMissiles);
     if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
     populateMap();
@@ -240,11 +241,12 @@ Ext.setup({
     var launchMissile = function(button, event) {
       var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
       var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. You will have " + (allPlayers[uid].readyMissiles-1) + " ready missiles left. Continue?";
+      var missileMsg = "This target is " + Math.round(distance) + " meters (" + Math.round(duration) + "s) away. Continue?";
       Ext.Msg.confirm("Confirm Missile Launch", missileMsg, function(buttonId) {
         if (buttonId === "yes") {
           socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
           allPlayers[uid].readyMissiles--;
+          missileButton.setBadge(allPlayers[uid].readyMissiles);
           if (allPlayers[uid].readyMissiles === 0)
             missileButton.disable(true);
         }
@@ -301,6 +303,7 @@ Ext.setup({
       hidden: true,
       handler: launchMissile
     });
+    missileButton.setWidth(84);
     /*landmineButton = new Ext.Button({
       text: 'Landmine',
       hidden: true,
@@ -414,7 +417,7 @@ Ext.setup({
             "<img src='/images/missile.png'> " +
               allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
             "<img src='/images/xp.png'> " +
-              myxp + "xp (" + getRank(myxp) + ")<br></td><td>" +
+              myxp + "xp <font size='-1'><b>" + getRank(myxp) + "</b></font><br></td><td>" +
             "<img src='/images/energy.png'> " +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
             "<img src='/images/stamina.png'> " +
@@ -444,8 +447,10 @@ Ext.setup({
               var newName = usernameField.getValue();
               if (newName) {
                 allPlayers[uid].name = newName;
+                socket.send({e: "name", uid: uid, name: newName});
+                this.setText('Saved');
+                this.disable(true);
               }
-              socket.send({e: "name", uid: uid, name: newName});
             }
           }, {
             xtype: 'spacer',
@@ -505,8 +510,10 @@ tick = function() {
     drawMissile(i);
     if (allMissiles[i] && (serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime)) { // an alternative approach is setTimeout when you launch the missile
       allMissiles[i].line.setMap(null);
-      if (allMissiles[i].owner === uid)
+      if (allMissiles[i].owner === uid) {
         allPlayers[uid].readyMissiles++;
+        missileButton.setBadge(allPlayers[uid].readyMissiles);
+      }
       var c = new google.maps.Circle({
         center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.lng),
         fillColor: "#00FFFF",
