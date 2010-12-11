@@ -143,8 +143,10 @@ socket.on('message', function(obj) {
       }
     }
     allMissiles = obj.missiles;
-    if (allPlayers[uid].hp <= 0 && worldTopbar)
+    if (allPlayers[uid].hp <= 0 && worldTopbar) {
       worldTopbar.disable();
+      worldTopbar.setTitle("You died");
+    }
     allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
     missileButton.setBadge(allPlayers[uid].readyMissiles);
     if (allPlayers[uid].readyMissiles === 0)
@@ -172,6 +174,7 @@ socket.on('message', function(obj) {
         drawPlayer(obj.damage[i].player);
         if (obj.damage[i].player === uid && worldTopbar) {
           worldTopbar.disable();
+          worldTopbar.setTitle("You died");
           Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
         }
       }
@@ -329,8 +332,10 @@ Ext.setup({
       missileButton
       /*landmineButton TODO*/]
     });
-    if (allPlayers && allPlayers[uid].hp <= 0)
+    if (allPlayers && allPlayers[uid].hp <= 0) {
       worldTopbar.disable();
+      worldTopbar.setTitle("You died");
+    }
 
     var initialCenter;
     var mapHide = true;
