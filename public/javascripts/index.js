@@ -395,8 +395,7 @@ Ext.setup({
 
     var usernameField = new Ext.form.Text({
       name: "username",
-      label: "Name",
-      required: true
+      label: "Name"
     });
 
     var statusPane = new Ext.Container();
@@ -461,6 +460,7 @@ Ext.setup({
 
     new Ext.TabPanel({
       fullscreen: true,
+      cardSwitchAnimation: false,
       tabBar: {
         dock: 'bottom',
         layout: {
