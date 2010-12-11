@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, initialLoc;
+var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation;
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -54,7 +54,6 @@ function numReadyMissiles(m) {
 function connectLoop() {
   if (socket.connected) {
     reconnectBox.hide();
-    // TODO(jeff): get all the updates I missed
   } else {
     setTimeout(connectLoop, 2000);
     socket.connect();
@@ -139,9 +138,21 @@ socket.on('message', function(obj) {
   console.log(obj);
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
+    if (allPlayers) {
+      for (var p = 0; p < allPlayers.length; ++p) {
+        if (allPlayers[p].marker)
+          allPlayers[p].marker.setMap(null);
+      }
+    }
     allPlayers = obj.players;
-    if (initialLoc)
-      allPlayers[uid].coords = initialLoc;
+    if (yourLocation)
+      allPlayers[uid].coords = yourLocation;
+    if (allMissiles) {
+      for (var m = 0; m < allMissiles.length; ++m) {
+        if (allMissiles[m] && allMissiles[m].line)
+          allMissiles[m].line.setMap(null);
+      }
+    }
     allMissiles = obj.missiles;
     if (allPlayers[uid].hp <= 0 && worldTopbar)
       worldTopbar.disable();
@@ -149,7 +160,6 @@ socket.on('message', function(obj) {
     if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
     populateMap();
-    setInterval(tick, 900);
   } else if (obj.e === "player") {
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id);
@@ -205,8 +215,8 @@ socket.on('message', function(obj) {
 });
 
 socket.on('connect', function() {
-  if (initialLoc)
-    socket.send({ e: "init", uid: uid, loc: initialLoc });
+  if (yourLocation)
+    socket.send({ e: "init", uid: uid, loc: yourLocation });
 });
 socket.on('disconnect', function() {
   reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
@@ -224,9 +234,10 @@ populateMap = function() {
   navigator.geolocation.watchPosition(function(position) {
     if (allPlayers[uid].coords.lat === position.coords.latitude && allPlayers[uid].coords.lng === position.coords.longitude)
       return; // no actual change in location
+    yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
     allPlayers[uid].coords.lat = position.coords.latitude;
     allPlayers[uid].coords.lng = position.coords.longitude;
-    socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords});
+    socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords });
     allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
   });
 };
@@ -329,9 +340,9 @@ Ext.setup({
 
     var initialCenter;
     var mapHide = true;
-    if (initialLoc) {
+    if (yourLocation) {
       mapHide = false;
-      initialCenter = new google.maps.LatLng(initialLoc.lat, initialLoc.lng);
+      initialCenter = new google.maps.LatLng(yourLocation.lat, yourLocation.lng);
     } else {
       initialCenter = new google.maps.LatLng(47.6063889, -122.3308333); // Seattle
     }
@@ -349,6 +360,7 @@ Ext.setup({
         maprender: function(comp, map) {
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
           map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
+          setInterval(tick, 900);
         }
       }
     });
@@ -481,16 +493,16 @@ if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(position) {
     if (worldMap)
       worldMap.show();
-    initialLoc = {lat: position.coords.latitude, lng: position.coords.longitude};
+    yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
     if (allPlayers)
-      allPlayers[uid].coords = initialLoc;
+      allPlayers[uid].coords = yourLocation;
     // there is occasionally a weird display bug for this alert
     //if (position.coords.accuracy > 500)
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
       worldMap.map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
     if (socket.connected)
-      socket.send({ e: "init", uid: uid, loc: initialLoc });
+      socket.send({ e: "init", uid: uid, loc: yourLocation });
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
 } else {
   Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
