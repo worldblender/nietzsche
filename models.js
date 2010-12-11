@@ -182,6 +182,7 @@ function missileArrived(missile, socket) {
         obj.hp -= damage;
         if (obj.hp <= 0) {
           obj.hp = 0;
+          obj.aliveSince = null;
           document.gxp += 100;
           db.players.save(document, noCallback);
           socket.broadcast({e: "gxp", uid: document._id, gxp: 100});

@@ -64,9 +64,10 @@ function drawPlayer(i) {
   if (!this.dead)
     this.dead = new google.maps.MarkerImage(
       "/images/dead.png", 
-      new google.maps.Size(32, 32),
+      new google.maps.Size(24, 24),
       new google.maps.Point(0, 0),
-      new google.maps.Point(16, 16)
+      new google.maps.Point(12, 12),
+      new google.maps.Size(24, 24)
     );
 
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.lng);
