@@ -27,6 +27,8 @@ function getRank(xp) {
 }
 
 function calcXP(player) {
+  if (!player.aliveSince)
+    return player.gxp; // aliveness XP is temporary?
   return Math.floor((serverTimeDiff + (new Date()).getTime() - player.aliveSince) / 60000) + player.gxp; // 1 XP per minute + gainedXP
 }
 
@@ -166,6 +168,7 @@ socket.on('message', function(obj) {
       if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
         allPlayers[obj.damage[i].player].hp = 0;
         allPlayers[obj.damage[i].player].marker.setMap(null);
+        allPlayers[obj.damage[i].player].aliveSince = null;
         drawPlayer(obj.damage[i].player);
         if (obj.damage[i].player === uid && worldTopbar) {
           worldTopbar.disable();
@@ -176,7 +179,7 @@ socket.on('message', function(obj) {
   } else if (obj.e === "gxp") {
     allPlayers[obj.uid].gxp += obj.gxp;
   } else if (obj.e === "events") {
-    var eventHtml = "<font size='-1'><b>Recent events</b>";
+    var eventHtml = "<b>Recent events</b>";
     for (var k = 0; k < obj.events.length; k++) {
       var e = obj.events[k];
       var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
@@ -188,7 +191,7 @@ socket.on('message', function(obj) {
       } else if (e.e === "killed") {
         eventHtml += "Killed by " + allPlayers[e.data].name + " <img width='16' height='16' src='/images/dead.png'>";
       } else if (e.e === "damage") {
-        eventHtml += "Your missile hit";
+        eventHtml += "You hit";
         for (var j = 0; j < e.data.length; j++) {
           var d = e.data[j];
           eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='/images/energy.png'>)";
@@ -197,7 +200,6 @@ socket.on('message', function(obj) {
         eventHtml += "Hit by missile (-" + e.data + " <img src='/images/health.png'>)";
       }
     }
-    eventHtml += "</font>";
     eventPane.update(eventHtml);
   }
 });
@@ -275,7 +277,7 @@ Ext.setup({
           missileButton.show();
           var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
           var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-          worldTopbar.setTitle(Math.round(distance) + " meters (" + Math.round(duration) + "s)");
+          worldTopbar.setTitle(Math.round(distance) + "m (" + Math.round(duration) + "s)");
           //landmineButton.show(); TODO
         });
       } else {
@@ -402,7 +404,12 @@ Ext.setup({
     });
 
     var statusPane = new Ext.Container();
-    eventPane = new Ext.Container({ html: "<b><font size='-1'>Recent events</font></b>" });
+    eventPane = new Ext.Container({
+      html: "<b>Recent events</b>",
+      style: {
+        fontSize: '75%'
+      }
+    });
 
     var profile = new Ext.Panel({
       title: "Profile",
