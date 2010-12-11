@@ -131,7 +131,7 @@ exports.newName = function(uid, name) {
 }
 
 exports.events = function(uid, callback) {
-  db.events.find({uid: uid, e: {$ne: "move"}}, function(err, cursor) {
+  db.events.find({uid: uid, e: {$ne: "move"}}, function(err, cursor) { // TODO(jeff): limit to 10-20 results
     cursor.toArray(function(err, results) {
       callback({e: "events", events: results});
     });

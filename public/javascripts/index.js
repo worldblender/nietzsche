@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, statusPane, initialLoc;
+var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, initialLoc;
 var socket = new io.Socket();
 
 RAD_TO_METERS = 6371 * 1000;
@@ -20,9 +20,9 @@ function haversineDistance(coords1, coords2) {
 function getRank(xp) {
   if (xp < 100)
     return "Rookie";
-  else if (xp < 200)
+  else if (xp < 250)
     return "Agent";
-  else if (xp < 400)
+  else if (xp < 500)
     return "Veteran";
 }
 
@@ -31,10 +31,14 @@ function readCookie(name) {
   var ca = document.cookie.split(';');
   for(var i=0;i < ca.length;i++) {
     var c = ca[i];
-    while (c.charAt(0)==' ') c = c.substring(1,c.length);
-    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    while (c.charAt(0)===' ') c = c.substring(1,c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
   }
   return null;
+}
+
+function calcXP(player) {
+  return Math.floor((serverTimeDiff + (new Date()).getTime() - player.aliveSince) / 60000) + player.gxp; // 1 XP per minute + gainedXP
 }
 
 function numReadyMissiles(m) {
@@ -47,102 +51,6 @@ function numReadyMissiles(m) {
   return readyMissiles;
 }
 
-uid = readCookie("uid");
-if (!uid) {
-  uid = Math.random().toString().substring(2); // TODO(jeff): use the device.uuid from phonegap for mobile apps
-  console.log("created new cookie: " + uid);
-  document.cookie = "uid=" + uid + "; expires=Wed, 1 Jan 2020 01:00:00 UTC; path=/";
-} else {
-  console.log("retrieved cookie: " + uid);
-}
-
-socket.on('message', function(obj) {
-  console.log(obj);
-  if (obj.e === "sync") {
-    serverTimeDiff = obj.time - (new Date()).getTime();
-    allPlayers = obj.players;
-    if (initialLoc)
-      allPlayers[uid].coords = initialLoc;
-    allMissiles = obj.missiles;
-    if (allPlayers[uid].hp <= 0 && worldTopbar)
-      worldTopbar.disable();
-    allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
-    if (allPlayers[uid].readyMissiles === 0)
-      missileButton.disable(true);
-    populateMap();
-    setInterval(tick, 900);
-  } else if (obj.e === "player") {
-    allPlayers[obj.player._id] = obj.player;
-    drawPlayer(obj.player._id);
-  } else if (obj.e === "missile") {
-    var len = allMissiles.push(obj.missile);
-    drawMissile(len-1);
-  } else if (obj.e === "moved") {
-    var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng)
-    allPlayers[obj.player].coords = movedLoc;
-    if (allPlayers[obj.player].marker)
-      allPlayers[obj.player].marker.setPosition(movedLoc);
-  } else if (obj.e === "damage") {
-    for (var i = 0; i < obj.damage.length; ++i) {
-      //console.log("reducing " + obj.damage[i].player + " hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
-      allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
-      if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
-        allPlayers[obj.damage[i].player].hp = 0;
-        allPlayers[obj.damage[i].player].marker.setMap(null);
-        drawPlayer(obj.damage[i].player);
-        if (obj.damage[i].player === uid && worldTopbar) {
-          worldTopbar.disable();
-          Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
-        }
-      }
-    }
-  } else if (obj.e === "gxp") {
-    allPlayers[obj.uid].gxp += obj.gxp;
-  } else if (obj.e === "events") {
-    var myxp = calcXP(allPlayers[uid]);
-    var statusHtml = "<table><tr><td>" +
-      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/health.png'>" +
-        allPlayers[uid].hp + " / 100<br></td><td>" +
-      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/level.png'>" +
-        allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
-      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/xp.png'>" +
-        myxp + "xp (" + getRank(myxp) + ")<br></td><td>" +
-      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/energy.png'>" +
-        allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
-      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/stamina.png'>" +
-        allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
-      "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/attack.png'>" +
-        allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
-    for (var i = 0; i < obj.events.length; i++) {
-      var e = obj.events[i];
-      if (e.e === "missile") {
-        statusHtml += "<br>" + "You launched a missile";
-      } else if (e.e === "kill") {
-        statusHtml += "<br>" + "You killed " + allPlayers[e.data].name;
-      } else if (e.e === "killed") {
-        statusHtml += "<br>" + "You were killed by " + allPlayers[e.data].name;
-      } else if (e.e === "damage") {
-        for (var j = 0; j < e.data.length; j++) {
-          var d = e.data[j];
-          statusHtml += "<br>" + "Your missile did " + d.dmg + " damage to " + allPlayers[d.player].name;
-        }
-      } else if (e.e === "damaged") {
-        statusHtml += "<br>" + "You took " + e.data + " damage from a missile";
-      }
-    }
-    statusPane.update(statusHtml);
-  }
-});
-
-socket.on('connect', function() {
-  if (initialLoc)
-    socket.send({ e: "init", uid: uid, loc: initialLoc });
-});
-socket.on('disconnect', function() {
-  reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
-  setTimeout(connectLoop, 2000);
-});
-
 function connectLoop() {
   if (socket.connected) {
     reconnectBox.hide();
@@ -151,10 +59,6 @@ function connectLoop() {
     setTimeout(connectLoop, 2000);
     socket.connect();
   }
-}
-
-function calcXP(player) {
-  return Math.floor((serverTimeDiff + (new Date()).getTime() - player.aliveSince) / 60000) + player.gxp; // 1 XP per minute + gainedXP
 }
 
 function drawPlayer(i) {
@@ -222,6 +126,92 @@ function drawMissile(i) {
   }
 }
 
+uid = readCookie("uid");
+if (!uid) {
+  uid = Math.random().toString().substring(2); // TODO(jeff): use the device.uuid from phonegap for mobile apps
+  console.log("created new cookie: " + uid);
+  document.cookie = "uid=" + uid + "; expires=Wed, 1 Jan 2020 01:00:00 UTC; path=/";
+} else {
+  console.log("retrieved cookie: " + uid);
+}
+
+socket.on('message', function(obj) {
+  console.log(obj);
+  if (obj.e === "sync") {
+    serverTimeDiff = obj.time - (new Date()).getTime();
+    allPlayers = obj.players;
+    if (initialLoc)
+      allPlayers[uid].coords = initialLoc;
+    allMissiles = obj.missiles;
+    if (allPlayers[uid].hp <= 0 && worldTopbar)
+      worldTopbar.disable();
+    allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
+    if (allPlayers[uid].readyMissiles === 0)
+      missileButton.disable(true);
+    populateMap();
+    setInterval(tick, 900);
+  } else if (obj.e === "player") {
+    allPlayers[obj.player._id] = obj.player;
+    drawPlayer(obj.player._id);
+  } else if (obj.e === "missile") {
+    var len = allMissiles.push(obj.missile);
+    drawMissile(len-1);
+  } else if (obj.e === "moved") {
+    var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng);
+    allPlayers[obj.player].coords = movedLoc;
+    if (allPlayers[obj.player].marker)
+      allPlayers[obj.player].marker.setPosition(movedLoc);
+  } else if (obj.e === "damage") {
+    for (var i = 0; i < obj.damage.length; ++i) {
+      //console.log("reducing " + obj.damage[i].player + " hp from " + allPlayers[obj.damage[i].player].hp + " by " + obj.damage[i].dmg);
+      allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
+      if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
+        allPlayers[obj.damage[i].player].hp = 0;
+        allPlayers[obj.damage[i].player].marker.setMap(null);
+        drawPlayer(obj.damage[i].player);
+        if (obj.damage[i].player === uid && worldTopbar) {
+          worldTopbar.disable();
+          Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
+        }
+      }
+    }
+  } else if (obj.e === "gxp") {
+    allPlayers[obj.uid].gxp += obj.gxp;
+  } else if (obj.e === "events") {
+    var eventHtml = "<b>Recent events</b>";
+    for (var k = 0; k < obj.events.length; k++) {
+      var e = obj.events[k];
+      var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
+      eventHtml += "<br>" + ts.getMonth() + "/" + ts.getDate() + " " + ts.getHours() + ":" + ts.getMinutes() + ":" + ts.getSeconds() + " ";
+      if (e.e === "missile") {
+        eventHtml += "Launched missile <img src='/images/level.png'>";
+      } else if (e.e === "kill") {
+        eventHtml += "Killed " + allPlayers[e.data].name + " <img src='/images/stamina.png'>";
+      } else if (e.e === "killed") {
+        eventHtml += "Killed by " + allPlayers[e.data].name + " <img width='16' height='16' src='/images/dead.png'>";
+      } else if (e.e === "damage") {
+        eventHtml += "Your missile hit";
+        for (var j = 0; j < e.data.length; j++) {
+          var d = e.data[j];
+          eventHtml += " " + allPlayers[d.player].name + " (-" + d.dmg + " <img src='/images/energy.png'>)";
+        }
+      } else if (e.e === "damaged") {
+        eventHtml += "Hit by missile (-" + e.data + " <img src='/images/health.png'>)";
+      }
+    }
+    eventPane.update(eventHtml);
+  }
+});
+
+socket.on('connect', function() {
+  if (initialLoc)
+    socket.send({ e: "init", uid: uid, loc: initialLoc });
+});
+socket.on('disconnect', function() {
+  reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
+  setTimeout(connectLoop, 2000);
+});
+
 populateMap = function() {
   for (var i in allPlayers) {
     drawPlayer(i);
@@ -238,7 +228,7 @@ populateMap = function() {
     socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords});
     allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
   });
-}
+};
 
 Ext.setup({
   icon: '/images/icon.png',
@@ -330,7 +320,7 @@ Ext.setup({
       }, {
         xtype: 'spacer'
       },
-      missileButton,
+      missileButton
       /*landmineButton TODO*/]
     });
     if (allPlayers && allPlayers[uid].hp <= 0)
@@ -407,7 +397,8 @@ Ext.setup({
       required: true
     });
 
-    statusPane = new Ext.Container();
+    var statusPane = new Ext.Container();
+    eventPane = new Ext.Container();
 
     var profile = new Ext.Panel({
       title: "Profile",
@@ -417,17 +408,17 @@ Ext.setup({
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
           var statusHtml = "<table><tr><td>" +
-            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/health.png'>" +
+            "<img src='/images/health.png'>" +
               allPlayers[uid].hp + " / 100<br></td><td>" +
-            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/level.png'>" +
+            "<img src='/images/level.png'>" +
               allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
-            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/xp.png'>" +
+            "<img src='/images/xp.png'>" +
               myxp + "xp (" + getRank(myxp) + ")<br></td><td>" +
-            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/energy.png'>" +
+            "<img src='/images/energy.png'>" +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
-            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/stamina.png'>" +
+            "<img src='/images/stamina.png'>" +
               allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
-            "<img src='http://m.mafiawars.com/mwfb/graphics/mobileWeb/320/icons/attack.png'>" +
+            "<img src='/images/attack.png'>" +
               allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
           statusPane.update(statusHtml);
           socket.send({e: "events", uid: uid});
@@ -457,9 +448,11 @@ Ext.setup({
             }
           }, {
             xtype: 'spacer',
-            height: 10
+            height: 15
           },
-          statusPane
+          statusPane,
+          { xtype: 'spacer', height: 14 },
+          eventPane
         ]
       }]
     });
@@ -537,4 +530,4 @@ tick = function() {
       }, 500);
     }
   }
-}
+};
