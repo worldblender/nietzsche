@@ -1,6 +1,9 @@
 var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, attackToggle, respawnButton;
 var socket = new io.Socket();
 
+TICK_INTERVAL = 700; // in ms
+BLAST_SPEED = 16; // must be even
+
 RAD_TO_METERS = 6371 * 1000;
 MISSILE_RADIUS = 400; // in meters
 MISSILE_DAMAGE = 40;
@@ -108,8 +111,6 @@ function drawPlayer(i) {
 }
 
 function drawMissile(i) {
-  if (allMissiles[i] === null)
-    return;
   var missileProgress = ((serverTimeDiff + (new Date()).getTime() - allMissiles[i].departureTime) / (allMissiles[i].arrivalTime - allMissiles[i].departureTime));
   if (missileProgress > 1 || missileProgress < 0)
     return;
@@ -124,7 +125,8 @@ function drawMissile(i) {
       path: missileLine,
       strokeColor: "#00FFFF",
       strokeOpacity: 1.0,
-      strokeWeight: 2
+      strokeWeight: 2,
+      clickable: false
     });
     missilePath.setMap(worldMap.map);
     allMissiles[i].line = missilePath;
@@ -166,12 +168,12 @@ socket.on('message', function(obj) {
     if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
     populateMap();
+    setInterval(tick, TICK_INTERVAL);
   } else if (obj.e === "player") {
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id);
   } else if (obj.e === "missile") {
     var len = allMissiles.push(obj.missile);
-    drawMissile(len-1);
   } else if (obj.e === "moved") {
     var movedLoc = new google.maps.LatLng(obj.loc.lat, obj.loc.lng);
     allPlayers[obj.player].coords = movedLoc;
@@ -248,9 +250,6 @@ socket.on('disconnect', function() {
 populateMap = function() {
   for (var i in allPlayers) {
     drawPlayer(i);
-  }
-  for (var i = 0; i < allMissiles.length; ++i) {
-    drawMissile(i);
   }
 
   navigator.geolocation.watchPosition(function(position) {
@@ -403,7 +402,6 @@ Ext.setup({
         maprender: function(comp, map) {
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
           map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
-          setInterval(tick, 900);
         }
       }
     });
@@ -564,40 +562,45 @@ if (navigator.geolocation) {
 
 tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
-    drawMissile(i);
-    if (allMissiles[i] && (serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime)) { // an alternative approach is setTimeout when you launch the missile
-      if (allMissiles[i].line)
-        allMissiles[i].line.setMap(null);
-      if (allMissiles[i].owner === uid) {
-        allPlayers[uid].readyMissiles++;
-        missileButton.setBadge(allPlayers[uid].readyMissiles);
-      }
-      var c = new google.maps.Circle({
-        center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.lng),
-        fillColor: "#00FFFF",
-        fillOpacity: 0.5,
-        strokeColor: "#00FFFF",
-        map: worldMap.map,
-        clickable: false,
-        radius: 0
-      });
-      allMissiles[i] = null;
-      missileButton.enable(true);
-      var r = 0;
-      var intvl = setInterval(function() {
-        if (r >= 400 && r % 2 === 0) // TODO(jeff): make this the constant / variable
-          r--;
-        else if (r % 2 === 0)
-          r += 20;
-        else if (r <= 5) {
-          clearInterval(intvl);
-          c.setMap(null);
-          return;
+    if (!allMissiles[i])
+      continue;
+    if (serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
+      if (allMissiles[i].blastR) {
+        if (allMissiles[i].blastR >= 400 && allMissiles[i].blastR % 2 === 0) // TODO(jeff): make this the constant / variable
+          allMissiles[i].blastR--;
+        else if (allMissiles[i].blastR % 2 === 0)
+          allMissiles[i].blastR += BLAST_SPEED;
+        else if (allMissiles[i].blastR < BLAST_SPEED) {
+          allMissiles[i].c.setMap(null);
+          allMissiles[i] = null;
+          continue;
         } else {
-          r -= 20;
+          allMissiles[i].blastR -= BLAST_SPEED;
         }
-        c.setRadius(r);
-      }, 500);
+        allMissiles[i].c.setRadius(allMissiles[i].blastR);
+      } else {
+        allMissiles[i].blastR = BLAST_SPEED;
+        if (allMissiles[i].line) {
+          allMissiles[i].line.setMap(null);
+          allMissiles[i].line = null;
+        }
+        if (allMissiles[i].owner === uid) {
+          allPlayers[uid].readyMissiles++; // TODO(jeff): possible bug - respawn while missile is in transit gives you an extra missile here
+          missileButton.setBadge(allPlayers[uid].readyMissiles);
+          missileButton.enable(true);
+        }
+        allMissiles[i].c = new google.maps.Circle({
+          center: new google.maps.LatLng(allMissiles[i].arrivalCoords.lat, allMissiles[i].arrivalCoords.lng),
+          fillColor: "#00FFFF",
+          fillOpacity: 0.5,
+          strokeColor: "#00FFFF",
+          map: worldMap.map,
+          clickable: false,
+          radius: BLAST_SPEED
+        });
+      }
+    } else {
+      drawMissile(i);
     }
   }
 };
