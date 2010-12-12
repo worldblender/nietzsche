@@ -427,7 +427,7 @@ Ext.setup({
       var ds = subList.getStore(), r  = ds.getAt(subIdx);
       alert(r.get('text'));
     };
-
+/* TODO
     var missions = new Ext.NestedList({
       title: "Missions",
       iconCls: "favorites",
@@ -450,7 +450,7 @@ Ext.setup({
       store: Menus.teamStore,
       listeners: { leafitemtap: onTap }
     });
-
+*/
     var usernameField = new Ext.form.Text({
       name: "username",
       label: "Name"
