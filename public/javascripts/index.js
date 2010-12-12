@@ -93,7 +93,7 @@ function drawPlayer(i, dropAnimation) {
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
-      map: worldMap.map,
+      map: worldMap,
       animation: dropAnim,
       icon: this.soldier
     });
@@ -102,7 +102,7 @@ function drawPlayer(i, dropAnimation) {
   } else {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
-      map: worldMap.map,
+      map: worldMap,
       icon: this.dead
     });
   }
@@ -134,7 +134,7 @@ function drawMissile(i) {
       strokeWeight: 2,
       clickable: false
     });
-    missilePath.setMap(worldMap.map);
+    missilePath.setMap(worldMap);
     allMissiles[i].line = missilePath;
   }
 }
@@ -294,7 +294,7 @@ Ext.setup({
             allPlayers[p].marker.setClickable(false);
         }
 
-        targetListener = google.maps.event.addListener(worldMap.map, "click", function(event) {
+        targetListener = google.maps.event.addListener(worldMap, "click", function(event) {
           if (target) {
             target.setMap(null); // clear previous marker
           }
@@ -307,7 +307,7 @@ Ext.setup({
             );
           target = new google.maps.Marker({
             position: event.latLng,
-            map: worldMap.map,
+            map: worldMap,
             clickable: false,
             zIndex: 9999,
             icon: this.crosshairs
@@ -387,27 +387,27 @@ Ext.setup({
     }
 
     var initialCenter;
-    var mapHide = true;
     if (yourLocation) {
-      mapHide = false;
       initialCenter = new google.maps.LatLng(yourLocation.lat, yourLocation.lng);
     } else {
       initialCenter = new google.maps.LatLng(47.6063889, -122.3308333); // Seattle
     }
-    worldMap = new Ext.Map({
-      mapOptions: {
-        navigationControl: false,
-        center: initialCenter,
-        zoom: 13,
-        hidden: mapHide,
-        mapTypeId: "customMap",
-        mapTypeControl: false,
-        streetViewControl: false
-      },
+
+    var mapContainer = new Ext.Container({
       listeners: {
-        maprender: function(comp, map) {
+        render: function() {
+          var mapContainerElement = document.getElementById(mapContainer.getId());
+          worldMap = new google.maps.Map(mapContainerElement, {
+            navigationControl: false,
+            center: initialCenter,
+            zoom: 13,
+            mapTypeId: "customMap",
+            mapTypeControl: false,
+            streetViewControl: false
+          });
+          worldMap.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
-          map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
+          mapContainerElement.style.height = (world.getHeight() - worldTopbar.getHeight()) + "px";
         }
       }
     });
@@ -415,9 +415,7 @@ Ext.setup({
     var world = new Ext.Panel({
       iconCls: 'search',
       title: 'World',
-      items: [
-        worldMap
-      ],
+      items: [ mapContainer ],
       dockedItems: [
         worldTopbar
       ]
@@ -549,8 +547,6 @@ Ext.setup({
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(function(position) {
-    if (worldMap)
-      worldMap.show();
     yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
     if (allPlayers && allPlayers[uid].hp > 0)
       allPlayers[uid].coords = yourLocation;
@@ -558,7 +554,7 @@ if (navigator.geolocation) {
     //if (position.coords.accuracy > 500)
     //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
     if (worldMap)
-      worldMap.map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+      worldMap.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
     if (socket.connected)
       socket.send({ e: "init", uid: uid, loc: yourLocation });
   }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
@@ -600,7 +596,7 @@ tick = function() {
           fillColor: "#00FFFF",
           fillOpacity: 0.5,
           strokeColor: "#00FFFF",
-          map: worldMap.map,
+          map: worldMap,
           clickable: false,
           radius: BLAST_SPEED
         });
