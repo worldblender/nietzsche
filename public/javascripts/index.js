@@ -572,7 +572,7 @@ tick = function() {
       continue;
     if (serverTimeDiff + (new Date()).getTime() > allMissiles[i].arrivalTime) { // an alternative approach is setTimeout when you launch the missile
       if (allMissiles[i].blastR) {
-        if (allMissiles[i].blastR >= 400 && allMissiles[i].blastR % 2 === 0) // TODO(jeff): make this the constant / variable
+        if (allMissiles[i].blastR >= MISSILE_RADIUS && allMissiles[i].blastR % 2 === 0) // TODO(jeff): make this be the owner's blast radius
           allMissiles[i].blastR--;
         else if (allMissiles[i].blastR % 2 === 0)
           allMissiles[i].blastR += BLAST_SPEED;
