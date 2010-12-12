@@ -1,8 +1,8 @@
 var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, attackToggle, respawnButton;
 var socket = new io.Socket();
 
-TICK_INTERVAL = 700; // in ms
-BLAST_SPEED = 16; // must be even
+TICK_INTERVAL = 200; // in ms. 700 for phones is okay
+BLAST_SPEED = 8; // must be even. 16 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
 MISSILE_RADIUS = 400; // in meters
@@ -591,7 +591,7 @@ tick = function() {
           allMissiles[i].line = null;
         }
         if (allMissiles[i].owner === uid) {
-          allPlayers[uid].readyMissiles++; // TODO(jeff): possible bug - respawn while missile is in transit gives you an extra missile here
+          allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
           missileButton.setBadge(allPlayers[uid].readyMissiles);
           missileButton.enable(true);
         }
