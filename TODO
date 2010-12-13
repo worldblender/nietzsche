@@ -8,3 +8,5 @@
 - switching everything that's stored in memory into localStorage! (doesn't require as much sync?)
 - bug: newly popped in players are clickable even when in targetting mode
 - nofix bug: name changes do not propogate
+- bug: missile count is sometimes wrong
+- try drawing using Pete's method (overlayView)
