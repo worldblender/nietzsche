@@ -1,4 +1,3 @@
-- "you" should be a different color than the other players
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
 - run through jslint
 - compress javascript before production http://closure-compiler.appspot.com/
@@ -10,3 +9,4 @@
 - nofix bug: name changes do not propogate
 - bug: missile count is sometimes wrong
 - try drawing using Pete's method (overlayView)
+- when the game reconnects, another bouncing image is added

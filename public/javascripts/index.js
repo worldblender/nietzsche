@@ -1,14 +1,35 @@
 var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, attackToggle, respawnButton;
-var socket = new io.Socket();
+var socket = new io.Socket('n.worldblender.com');
 
-TICK_INTERVAL = 700; // in ms. 700 for phones is okay
-BLAST_SPEED = 20; // must be even. 20 for phones is okay
+TICK_INTERVAL = 400; // in ms. 700 for phones is okay
+BLAST_SPEED = 5; // must be even. 20 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
 MISSILE_RADIUS = 400; // in meters
 MISSILE_DAMAGE = 40;
 MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
+
+MI_Crosshairs = new google.maps.MarkerImage(
+  "/images/crosshairs.png",
+  new google.maps.Size(40, 40),
+  new google.maps.Point(0, 0),
+  new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
+);
+MI_Soldier = new google.maps.MarkerImage(
+  "/images/soldier.png", 
+  new google.maps.Size(24, 24),
+  new google.maps.Point(0, 0),
+  new google.maps.Point(12, 12)
+);
+MI_Dead = new google.maps.MarkerImage(
+  "/images/dead.png", 
+  new google.maps.Size(24, 24),
+  new google.maps.Point(0, 0),
+  new google.maps.Point(12, 12),
+  new google.maps.Size(24, 24)
+);
+
 
 // TODO(Jeff): find a way to share this function between here and models.js
 function haversineDistance(coords1, coords2) {
@@ -69,22 +90,6 @@ function alive() {
 }
 
 function drawPlayer(i, dropAnimation) {
-  if (!this.soldier)
-    this.soldier = new google.maps.MarkerImage(
-      "/images/soldier.png", 
-      new google.maps.Size(24, 24),
-      new google.maps.Point(0, 0),
-      new google.maps.Point(12, 12)
-    );
-  if (!this.dead)
-    this.dead = new google.maps.MarkerImage(
-      "/images/dead.png", 
-      new google.maps.Size(24, 24),
-      new google.maps.Point(0, 0),
-      new google.maps.Point(12, 12),
-      new google.maps.Size(24, 24)
-    );
-
   var plocation = new google.maps.LatLng(allPlayers[i].coords.lat, allPlayers[i].coords.lng);
   var dropAnim = null;
   if (dropAnimation)
@@ -95,7 +100,7 @@ function drawPlayer(i, dropAnimation) {
       position: plocation,
       map: worldMap,
       animation: dropAnim,
-      icon: this.soldier
+      icon: MI_Soldier
     });
     if (i === uid)
       allPlayers[i].marker.setAnimation(google.maps.Animation.BOUNCE);
@@ -103,7 +108,7 @@ function drawPlayer(i, dropAnimation) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap,
-      icon: this.dead
+      icon: MI_Dead
     });
   }
   allPlayers[i].marker.info = allPlayers[i];
@@ -142,14 +147,11 @@ function drawMissile(i) {
 uid = localStorage["uid"];
 if (!uid) {
   uid = Math.random().toString().substring(2); // TODO(jeff): use the device.uuid from phonegap for mobile apps
-  console.log("created new cookie: " + uid);
   localStorage["uid"] = uid;
-} else {
-  console.log("retrieved cookie: " + uid);
 }
 
 socket.on('message', function(obj) {
-  console.log(obj);
+  // console.log(obj);  DEBUG
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
     if (allPlayers) {
@@ -298,19 +300,12 @@ Ext.setup({
           if (target) {
             target.setMap(null); // clear previous marker
           }
-          if (!this.crosshairs)
-            this.crosshairs = new google.maps.MarkerImage(
-              "/images/crosshairs.png",
-              new google.maps.Size(40, 40),
-              new google.maps.Point(0, 0),
-              new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
-            );
           target = new google.maps.Marker({
             position: event.latLng,
             map: worldMap,
             clickable: false,
             zIndex: 9999,
-            icon: this.crosshairs
+            icon: MI_Crosshairs
           });
           missileButton.show();
           var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
