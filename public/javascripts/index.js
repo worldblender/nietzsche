@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, attackToggle, respawnButton;
+var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton;
 var socket = new io.Socket('n.worldblender.com');
 
 TICK_INTERVAL = 700; // in ms. 700 for phones is okay
@@ -78,7 +78,7 @@ function connectLoop() {
 }
 
 function killed() {
-  attackToggle(null, "Attack", false);
+  actionToggle(null, "Attack", false);
   actionButtons.setPressed(attackButton, false);
   attackButton.disable(true);
   worldTopbar.setTitle("You died");
@@ -151,7 +151,7 @@ if (!uid) {
 }
 
 socket.on('message', function(obj) {
-  // console.log(obj);  DEBUG
+  console.log(obj);
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
     if (allPlayers) {
@@ -175,6 +175,7 @@ socket.on('message', function(obj) {
     missileButton.setBadge(allPlayers[uid].readyMissiles);
     if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
+    shieldButton.setBadge(allPlayers[uid].items.s);
     populateMap();
     setInterval(tick, TICK_INTERVAL);
   } else if (obj.e === "player") {
@@ -235,14 +236,14 @@ socket.on('message', function(obj) {
       attackButton.enable(true);
       worldTopbar.setTitle("");
     }
-    if (allPlayers[uid].marker)
-      allPlayers[uid].marker.setMap(null);
-    allPlayers[uid] = obj.player;
-    allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
-    missileButton.setBadge(allPlayers[uid].readyMissiles);
+    if (allPlayers[obj.player._id].marker)
+      allPlayers[obj.player._id].marker.setMap(null);
+    allPlayers[obj.player._id] = obj.player;
+    //allPlayers[obj.player._id].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
+    //missileButton.setBadge(allPlayers[obj.player._id].readyMissiles);
     //if (allPlayers[uid].readyMissiles === 0)
     //  missileButton.disable(true);
-    drawPlayer(uid, true);
+    drawPlayer(obj.player._id, true);
   }
 });
 
@@ -287,8 +288,8 @@ Ext.setup({
         missileButton.disable(true);
     };
 
-    attackToggle = function(t, button, pressed) {
-      if (button.text == "Attack" && pressed) {
+    actionToggle = function(t, button, pressed) {
+      if (button.text === "Attack" && pressed) {
         //Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
         worldTopbar.setTitle("Tap target");
         for (var p in allPlayers) {
@@ -329,6 +330,11 @@ Ext.setup({
             allPlayers[p].marker.setClickable(true);
         }
       }
+      if (button.text === "Defense" && pressed) {
+        shieldButton.show();
+      } else {
+        shieldButton.hide();
+      }
     };
 
     missileButton = new Ext.Button({
@@ -338,6 +344,17 @@ Ext.setup({
       handler: launchMissile
     });
     missileButton.setWidth(84);
+
+    var activateShield = function(button, event) {
+
+    };
+
+    shieldButton = new Ext.Button({
+      text: 'Shield',
+      ui: 'action',
+      hidden: true,
+      handler: activateShield
+    });
 
     respawnButton = new Ext.Button({
       text: 'Respawn',
@@ -356,24 +373,28 @@ Ext.setup({
       ui: 'action'
     });
 
+    defenseButton = new Ext.Button({
+      text: 'Defense',
+      ui: 'action'
+    });
+
     actionButtons = new Ext.SegmentedButton({
       allowDepress: true,
-      listeners: { toggle: attackToggle },
-      items: [ attackButton ]
+      listeners: { toggle: actionToggle },
+      items: [ attackButton, defenseButton ]
     });
 
     worldTopbar = new Ext.Toolbar({
       dock: 'top',
       items: [
         actionButtons,
-        //}, {   TODO(jeff): remove when adding this
-        //  text: 'Defense',
       {
         xtype: 'spacer'
       }, {
         xtype: 'spacer'
       },
       missileButton,
+      shieldButton,
       respawnButton
       /*landmineButton TODO*/]
     });
