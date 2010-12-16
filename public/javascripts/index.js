@@ -5,7 +5,7 @@ TICK_INTERVAL = 700; // in ms. 700 for phones is okay
 BLAST_SPEED = 20; // must be even. 20 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
-MISSILE_RADIUS = 400; // in meters
+MISSILE_RADIUS = 400; // in meters // TODO(jeff): we should be pulling these values from the items? but items are not send from server to client right now...
 MISSILE_DAMAGE = 40;
 MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
@@ -175,7 +175,7 @@ socket.on('message', function(obj) {
     missileButton.setBadge(allPlayers[uid].readyMissiles);
     if (allPlayers[uid].readyMissiles === 0)
       missileButton.disable(true);
-    shieldButton.setBadge(allPlayers[uid].items.s);
+    shieldButton.setBadge(allPlayers[uid].items.s.e);
     populateMap();
     setInterval(tick, TICK_INTERVAL);
   } else if (obj.e === "player") {
@@ -345,16 +345,23 @@ Ext.setup({
     });
     missileButton.setWidth(84);
 
-    var activateShield = function(button, event) {
-
+    var toggleShield = function(button, event) {
+      if (allPlayers[uid].items.s.a === 0) {
+        socket.send({e: "shield", uid: uid, active: 1});
+        allPlayers[uid].items.s.a = 1;
+      } else {
+        socket.send({e: "shield", uid: uid, active: 0});
+        allPlayers[uid].items.s.a = 0;
+      }
     };
 
     shieldButton = new Ext.Button({
       text: 'Shield',
       ui: 'action',
       hidden: true,
-      handler: activateShield
+      handler: toggleShield
     });
+    shieldButton.setWidth(94);
 
     respawnButton = new Ext.Button({
       text: 'Respawn',
@@ -579,6 +586,17 @@ if (navigator.geolocation) {
 }
 
 tick = function() {
+  if (allPlayers[uid].items.s.a === 1) {
+    allPlayers[uid].items.s.e--;
+    shieldButton.setBadge(allPlayers[uid].items.s.e)
+    if (allPlayers[uid].items.s.e === 0)
+      allPlayers[uid].items.s.a = 0;
+  } else {
+    if (allPlayers[uid].items.s.e < 100) {
+      allPlayers[uid].items.s.e++;
+      shieldButton.setBadge(allPlayers[uid].items.s.e)
+    }
+  }
   for (var i = 0; i < allMissiles.length; ++i) {
     if (!allMissiles[i])
       continue;

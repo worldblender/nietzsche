@@ -77,6 +77,8 @@ socket.on('connection', function(client) {
       models.respawn(obj.uid, function(err, document) {
         socket.broadcast({e: "respawn", player: document});
       });
+    } else if (obj.e === "shield") {
+      models.shield(obj.uid, obj.active);
     }
   });
   client.on('disconnect', function() {

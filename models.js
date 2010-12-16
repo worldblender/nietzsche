@@ -8,6 +8,8 @@ var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, 
 
 // global configs
 INITIAL_HP = 100;
+SHIELD_MULTIPLIER = 0.02;
+SHIELD_ENERGY = 100;
 LANDMINE_RADIUS = 200; // in meters
 LANDMINE_DAMAGE = 20;
 MISSILE_RADIUS = 400; // in meters
@@ -90,7 +92,7 @@ exports.init = function(uid, coords, initCallback, moveCallback) {
     hp: INITIAL_HP,
     gxp: 0,
     coords: coords,
-    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, s: 100, c: 5 },
+    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, s: {e: SHIELD_ENERGY, a: 0}, c: 5 },
     aliveSince: (new Date()).getTime() + 0.01,
     name: nameGenerator()
   };
@@ -179,6 +181,16 @@ function missileArrived(missile, socket) {
         if (obj.hp <= 0)
           continue;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
+        if (obj.items.s.a === 1) {
+          var unshieldedDamage = Math.ceil(damage * SHIELD_MULTIPLIER);
+          if (obj.items.s.e >= damage - unshieldedDamage) {
+            obj.items.s.e -= damage - unshieldedDamage;
+            damage = unshieldedDamage;
+          } else {
+            damage = damage - obj.items.s.e;
+            obj.items.s.e = 0;
+          }
+        }
         obj.hp -= damage;
         if (obj.hp <= 0) {
           obj.hp = 0;
@@ -210,6 +222,15 @@ exports.respawn = function(uid, callback) {
     document.aliveSince = (new Date()).getTime() + 0.01;
     db.players.save(document, callback);
     db.events.insert({e: "respawn", uid: uid}, noCallback);
+  });
+}
+
+exports.shield = function(uid, active) {
+  db.players.findOne({_id: uid}, function(err, document) {
+    if (document.items.s.a === 1 && active === 0)
+    document.items.s.a = active;
+    db.players.save(document, callback);
+    db.events.insert({e: "shield", uid: uid, active: active}, noCallback);
   });
 }
 
