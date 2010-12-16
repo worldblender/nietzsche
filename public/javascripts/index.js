@@ -1,8 +1,8 @@
 var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, attackToggle, respawnButton;
 var socket = new io.Socket('n.worldblender.com');
 
-TICK_INTERVAL = 400; // in ms. 700 for phones is okay
-BLAST_SPEED = 6; // must be even. 20 for phones is okay
+TICK_INTERVAL = 700; // in ms. 700 for phones is okay
+BLAST_SPEED = 20; // must be even. 20 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
 MISSILE_RADIUS = 400; // in meters
@@ -491,12 +491,12 @@ Ext.setup({
           usernameField,
           {
             xtype: 'spacer',
-            height: 10
+            height: 5
           }, {
             xtype: 'button',
-            text: 'Save',
+            text: 'Save Name',
             ui: 'confirm',
-            width: 100,
+            width: 140,
             handler: function() {
               var newName = usernameField.getValue();
               if (newName) {
