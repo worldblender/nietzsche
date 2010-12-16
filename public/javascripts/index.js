@@ -2,7 +2,7 @@ var target, targetListener, missileButton, landmineButton, worldMap, worldTopbar
 var socket = new io.Socket('n.worldblender.com');
 
 TICK_INTERVAL = 400; // in ms. 700 for phones is okay
-BLAST_SPEED = 5; // must be even. 20 for phones is okay
+BLAST_SPEED = 6; // must be even. 20 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
 MISSILE_RADIUS = 400; // in meters
