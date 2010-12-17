@@ -370,7 +370,7 @@ Ext.setup({
             shieldButton.setBadge(allPlayers[uid].items.s.e)
           }
           if (allPlayers[uid].items.s.e === 0) {
-            clearInterval(activeShieldTimer);
+            clearInterval(this.shieldTimer);
             this.shieldTimer = null;
           }
 
@@ -384,7 +384,7 @@ Ext.setup({
             shieldButton.setBadge(allPlayers[uid].items.s.e)
           }
           if (allPlayers[uid].items.s.e === 100) {
-            clearInterval(activeShieldTimer);
+            clearInterval(this.shieldTimer);
             this.shieldTimer = null;
           }
         }, 1000);
