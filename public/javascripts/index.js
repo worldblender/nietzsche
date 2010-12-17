@@ -178,6 +178,10 @@ socket.on('message', function(obj) {
     shieldButton.setBadge(allPlayers[uid].items.s.e);
     populateMap();
     setInterval(tick, TICK_INTERVAL);
+    if (!((allPlayers[uid].items.s.e === 100 && allPlayers[uid].items.s.a === 0) || (allPlayers[uid].items.s.e === 0 && allPlayers[uid].items.s.a === 1))) {
+      // TODO(jeff): start shield ticker
+    }
+
   } else if (obj.e === "player") {
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id, true);
@@ -202,6 +206,10 @@ socket.on('message', function(obj) {
           Ext.Msg.alert("Dead!", allPlayers[uid].name + ", you have been killed!");
         }
       }
+      if (obj.damage[i].player === uid) {
+        allPlayers[uid].items.s.e -= obj.damage[i].sDmg;
+        shieldButton.setBadge(allPlayers[uid].items.s.e);
+      }
     }
   } else if (obj.e === "gxp") {
     allPlayers[obj.uid].gxp += obj.gxp;
@@ -224,9 +232,14 @@ socket.on('message', function(obj) {
           eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='/images/energy.png'>)";
         }
       } else if (e.e === "damaged") {
-        eventHtml += "Hit by missile (-" + e.data + " <img src='/images/health.png'>)";
+        eventHtml += "Hit by missile (-" + e.data.dmg + " <img src='/images/health.png'>, -" + e.data.sDmg + "shieldimg)";
       } else if (e.e === "respawn") {
         eventHtml += "Respawned";
+      } else if (e.e === "shield") {
+        if (e.active === 1)
+          eventHtml += "Activated shields";
+        else
+          eventHtml += "Deactivated shields";
       }
     }
     eventPane.update(eventHtml);
@@ -346,11 +359,35 @@ Ext.setup({
     missileButton.setWidth(84);
 
     var toggleShield = function(button, event) {
+      if (this.shieldTimer) {
+        clearInterval(this.shieldTimer);
+      }
       if (allPlayers[uid].items.s.a === 0) {
         socket.send({e: "shield", uid: uid, active: 1});
+        this.shieldTimer = setInterval(function() {
+          if (allPlayers[uid].items.s.e > 0) {
+            allPlayers[uid].items.s.e--;
+            shieldButton.setBadge(allPlayers[uid].items.s.e)
+          }
+          if (allPlayers[uid].items.s.e === 0) {
+            clearInterval(activeShieldTimer);
+            this.shieldTimer = null;
+          }
+
+        }, 1000);
         allPlayers[uid].items.s.a = 1;
       } else {
         socket.send({e: "shield", uid: uid, active: 0});
+        this.shieldTimer = setInterval(function() {
+          if (allPlayers[uid].items.s.e < 100) {
+            allPlayers[uid].items.s.e++;
+            shieldButton.setBadge(allPlayers[uid].items.s.e)
+          }
+          if (allPlayers[uid].items.s.e === 100) {
+            clearInterval(activeShieldTimer);
+            this.shieldTimer = null;
+          }
+        }, 1000);
         allPlayers[uid].items.s.a = 0;
       }
     };
@@ -586,17 +623,6 @@ if (navigator.geolocation) {
 }
 
 tick = function() {
-  if (allPlayers[uid].items.s.a === 1) {
-    allPlayers[uid].items.s.e--;
-    shieldButton.setBadge(allPlayers[uid].items.s.e)
-    if (allPlayers[uid].items.s.e === 0)
-      allPlayers[uid].items.s.a = 0;
-  } else {
-    if (allPlayers[uid].items.s.e < 100) {
-      allPlayers[uid].items.s.e++;
-      shieldButton.setBadge(allPlayers[uid].items.s.e)
-    }
-  }
   for (var i = 0; i < allMissiles.length; ++i) {
     if (!allMissiles[i])
       continue;

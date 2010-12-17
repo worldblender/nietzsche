@@ -8,7 +8,6 @@ var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, 
 
 // global configs
 INITIAL_HP = 100;
-SHIELD_MULTIPLIER = 0.02;
 SHIELD_ENERGY = 100;
 LANDMINE_RADIUS = 200; // in meters
 LANDMINE_DAMAGE = 20;
@@ -92,7 +91,8 @@ exports.init = function(uid, coords, initCallback, moveCallback) {
     hp: INITIAL_HP,
     gxp: 0,
     coords: coords,
-    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, s: {e: SHIELD_ENERGY, a: 0}, c: 5 },
+//    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, s: {e: SHIELD_ENERGY, a: 0}, c: 5 },
+    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, s: {e: SHIELD_ENERGY, a: 0}, c: 5 },
     aliveSince: (new Date()).getTime() + 0.01,
     name: nameGenerator()
   };
@@ -180,14 +180,20 @@ function missileArrived(missile, socket) {
         var obj = result.documents[0].results[i].obj;
         if (obj.hp <= 0)
           continue;
+        var sdamage = 0;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         if (obj.items.s.a === 1) {
-          var unshieldedDamage = Math.ceil(damage * SHIELD_MULTIPLIER);
-          if (obj.items.s.e >= damage - unshieldedDamage) {
-            obj.items.s.e -= damage - unshieldedDamage;
-            damage = unshieldedDamage;
+          obj.items.s.e -= Math.ceil(((new Date()).getTime() - obj.items.s.t) / 1000);
+          if (obj.items.s.e < 0)
+            obj.items.s.e = 0;
+          obj.items.s.t = (new Date()).getTime() + 0.01;
+          if (obj.items.s.e >= damage) {
+            obj.items.s.e -= damage;
+            sdamage = damage;
+            damage = 0;
           } else {
-            damage = damage - obj.items.s.e;
+            damage -= obj.items.s.e;
+            sdamage = obj.items.s.e;
             obj.items.s.e = 0;
           }
         }
@@ -204,8 +210,8 @@ function missileArrived(missile, socket) {
           db.events.insert({e: "killed", uid: obj._id, data: missile.owner}, noCallback); // redundant but nice
         }
         db.players.save(obj, noCallback);
-        dmg.push({player: obj._id, dmg: damage});
-        db.events.insert({e: "damaged", uid: obj._id, data: damage}, noCallback); // redundant but nice
+        dmg.push({player: obj._id, dmg: damage, sDmg: sdamage});
+        db.events.insert({e: "damaged", uid: obj._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
       }
       if (dmg.length > 0) {
         // onsole.log("broadcasting damage: " + util.inspect(dmg));
@@ -227,9 +233,18 @@ exports.respawn = function(uid, callback) {
 
 exports.shield = function(uid, active) {
   db.players.findOne({_id: uid}, function(err, document) {
-    if (document.items.s.a === 1 && active === 0)
+    if (document.items.s.a === 1 && active === 0 && document.items.s.t) {
+      document.items.s.e -= Math.ceil(((new Date()).getTime() - document.items.s.t) / 1000);
+      if (document.items.s.e < 0)
+        document.items.s.e = 0;
+    } else if (document.items.s.a === 0 && active === 1 && document.items.s.t) {
+      document.items.s.e += Math.floor(((new Date()).getTime() - document.items.s.t) / 1000);
+      if (document.items.s.e > 100)
+        document.items.s.e = 100;
+    }
+    document.items.s.t = (new Date()).getTime() + 0.01;
     document.items.s.a = active;
-    db.players.save(document, callback);
+    db.players.save(document, noCallback);
     db.events.insert({e: "shield", uid: uid, active: active}, noCallback);
   });
 }
