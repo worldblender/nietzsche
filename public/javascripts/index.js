@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton;
+var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton, defenseButtons, shieldToggle;
 var socket = new io.Socket('n.worldblender.com');
 
 TICK_INTERVAL = 700; // in ms. 700 for phones is okay
@@ -144,6 +144,43 @@ function drawMissile(i) {
   }
 }
 
+function shieldToggle(t, button, pressed) {
+  if (this.shieldTimer) {
+    clearInterval(this.shieldTimer);
+  }
+  if (pressed) {
+    if (button !== "sync") {
+      socket.send({e: "shield", uid: uid, active: 1});
+      allPlayers[uid].items.s.a = 1;
+    }
+    this.shieldTimer = setInterval(function() {
+      if (allPlayers[uid].items.s.e > 0) {
+        allPlayers[uid].items.s.e--;
+        shieldButton.setBadge(allPlayers[uid].items.s.e)
+      }
+      if (allPlayers[uid].items.s.e === 0) {
+        clearInterval(this.shieldTimer);
+        this.shieldTimer = null;
+      }
+    }, 1000);
+  } else {
+    if (button !== "sync") {
+      socket.send({e: "shield", uid: uid, active: 0});
+      allPlayers[uid].items.s.a = 0;
+    } 
+    this.shieldTimer = setInterval(function() {
+      if (allPlayers[uid].items.s.e < 100) {
+        allPlayers[uid].items.s.e++;
+        shieldButton.setBadge(allPlayers[uid].items.s.e)
+      }
+      if (allPlayers[uid].items.s.e === 100) {
+        clearInterval(this.shieldTimer);
+        this.shieldTimer = null;
+      }
+    }, 1000);
+  }
+};
+
 uid = localStorage["uid"];
 if (!uid) {
   uid = Math.random().toString().substring(2); // TODO(jeff): use the device.uuid from phonegap for mobile apps
@@ -167,6 +204,7 @@ socket.on('message', function(obj) {
           allMissiles[m].line.setMap(null);
       }
     }
+    shieldToggle(null, "sync", allPlayers[uid].items.s.a === 1)
     allMissiles = obj.missiles;
     if (allPlayers[uid].hp <= 0 && worldTopbar) {
       killed();
@@ -178,10 +216,6 @@ socket.on('message', function(obj) {
     shieldButton.setBadge(allPlayers[uid].items.s.e);
     populateMap();
     setInterval(tick, TICK_INTERVAL);
-    if (!((allPlayers[uid].items.s.e === 100 && allPlayers[uid].items.s.a === 0) || (allPlayers[uid].items.s.e === 0 && allPlayers[uid].items.s.a === 1))) {
-      // TODO(jeff): start shield ticker
-    }
-
   } else if (obj.e === "player") {
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id, true);
@@ -344,9 +378,10 @@ Ext.setup({
         }
       }
       if (button.text === "Defense" && pressed) {
-        shieldButton.show();
+        defenseButtons.show();
+        defenseButtons.setPressed(shieldButton, allPlayers[uid].items.s.a === 1, true);
       } else {
-        shieldButton.hide();
+        defenseButtons.hide();
       }
     };
 
@@ -358,47 +393,20 @@ Ext.setup({
     });
     missileButton.setWidth(84);
 
-    var toggleShield = function(button, event) {
-      if (this.shieldTimer) {
-        clearInterval(this.shieldTimer);
-      }
-      if (allPlayers[uid].items.s.a === 0) {
-        socket.send({e: "shield", uid: uid, active: 1});
-        this.shieldTimer = setInterval(function() {
-          if (allPlayers[uid].items.s.e > 0) {
-            allPlayers[uid].items.s.e--;
-            shieldButton.setBadge(allPlayers[uid].items.s.e)
-          }
-          if (allPlayers[uid].items.s.e === 0) {
-            clearInterval(this.shieldTimer);
-            this.shieldTimer = null;
-          }
-
-        }, 1000);
-        allPlayers[uid].items.s.a = 1;
-      } else {
-        socket.send({e: "shield", uid: uid, active: 0});
-        this.shieldTimer = setInterval(function() {
-          if (allPlayers[uid].items.s.e < 100) {
-            allPlayers[uid].items.s.e++;
-            shieldButton.setBadge(allPlayers[uid].items.s.e)
-          }
-          if (allPlayers[uid].items.s.e === 100) {
-            clearInterval(this.shieldTimer);
-            this.shieldTimer = null;
-          }
-        }, 1000);
-        allPlayers[uid].items.s.a = 0;
-      }
-    };
 
     shieldButton = new Ext.Button({
       text: 'Shield',
       ui: 'action',
-      hidden: true,
-      handler: toggleShield
     });
     shieldButton.setWidth(94);
+
+    defenseButtons = new Ext.SegmentedButton({
+      allowDepress: true,
+      listeners: { toggle: shieldToggle },
+      items: [ shieldButton ],
+      hidden: true
+    });
+    defenseButtons.setWidth(94);
 
     respawnButton = new Ext.Button({
       text: 'Respawn',
@@ -432,15 +440,12 @@ Ext.setup({
       dock: 'top',
       items: [
         actionButtons,
-      {
-        xtype: 'spacer'
-      }, {
-        xtype: 'spacer'
-      },
-      missileButton,
-      shieldButton,
-      respawnButton
-      /*landmineButton TODO*/]
+        { xtype: 'spacer' },
+        missileButton,
+        defenseButtons,
+        respawnButton
+        /*landmineButton TODO*/
+      ]
     });
     if (allPlayers && allPlayers[uid].hp <= 0) {
       killed();

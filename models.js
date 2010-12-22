@@ -92,7 +92,7 @@ exports.init = function(uid, coords, initCallback, moveCallback) {
     gxp: 0,
     coords: coords,
 //    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, l: { r: LANDMINE_RADIUS, d: LANDMINE_DAMAGE }, s: {e: SHIELD_ENERGY, a: 0}, c: 5 },
-    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, s: {e: SHIELD_ENERGY, a: 0}, c: 5 },
+    items: { m: { r: MISSILE_RADIUS, d: MISSILE_DAMAGE, m: [null, null, null] }, s: {e: SHIELD_ENERGY, a: 0}},
     aliveSince: (new Date()).getTime() + 0.01,
     name: nameGenerator()
   };
