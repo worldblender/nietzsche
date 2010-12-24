@@ -216,7 +216,7 @@ socket.on('message', function(obj) {
   if (obj.e === "sync") {
     serverTimeDiff = obj.time - (new Date()).getTime();
     if (allPlayers) {
-      for (var p = 0; p < allPlayers.length; ++p) {
+      for (var p in allPlayers) {
         if (allPlayers[p].marker)
           allPlayers[p].marker.setMap(null);
       }
