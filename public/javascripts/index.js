@@ -401,7 +401,6 @@ Ext.setup({
     });
     missileButton.setWidth(84);
 
-
     shieldButton = new Ext.Button({
       text: 'Shield',
       ui: 'action',
