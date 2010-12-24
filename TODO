@@ -10,5 +10,5 @@
 - bug: missile count is sometimes wrong
 - try drawing using Pete's method (overlayView)
 - when the game reconnects, another bouncing image is added
-defense button needs to deactivate when dead
 missile button sometimes active when there are no missiles
+- notify if browser is not supported

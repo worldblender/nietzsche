@@ -80,7 +80,9 @@ function connectLoop() {
 function killed() {
   actionToggle(null, "Attack", false);
   actionButtons.setPressed(attackButton, false);
+  actionButtons.setPressed(defenseButton, false);
   attackButton.disable(true);
+  defenseButton.disable(true);
   worldTopbar.setTitle("You died");
   respawnButton.show();
 }
@@ -281,6 +283,7 @@ socket.on('message', function(obj) {
     if (uid === obj.player._id) {
       respawnButton.hide();
       attackButton.enable(true);
+      defenseButton.enable(true);
       worldTopbar.setTitle("");
     }
     if (allPlayers[obj.player._id].marker)
