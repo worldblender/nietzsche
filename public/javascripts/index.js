@@ -98,7 +98,7 @@ function drawPlayer(i, dropAnimation) {
     dropAnim = google.maps.Animation.DROP;
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
   if (allPlayers[i].marker)
-    allPlayers.[i].marker.setMap(null);
+    allPlayers[i].marker.setMap(null);
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
@@ -332,6 +332,9 @@ Ext.setup({
   phoneStartupScreen: '/images/phone_startup.jpeg',
   glossOnIcon: true,
   onReady: function() {
+    Ext.Msg.enterAnimation = false;
+    Ext.Msg.exitAnimation = false;
+
     var launchMissile = function(button, event) {
       socket.send({ e: "m", uid: uid, loc: { lat: target.getPosition().lat(), lng: target.getPosition().lng() }});
       allPlayers[uid].readyMissiles--;
@@ -610,27 +613,25 @@ Ext.setup({
       ]
     });
 
-    Ext.Msg.enterAnimation = false;
-    Ext.Msg.exitAnimation = false;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
+        if (allPlayers && allPlayers[uid].hp > 0)
+          allPlayers[uid].coords = yourLocation;
+        // there is occasionally a weird display bug for this alert, crunching this all up into one
+        if (position.coords.accuracy > 500)
+          Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.");
+        worldMap.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+        if (socket.connected)
+          socket.send({ e: "init", uid: uid, loc: yourLocation });
+      }, function(error) {
+        Ext.Msg.alert("Geolocation error", error.message);
+      }, {enableHighAccuracy:true, timeout:60000}); // TODO(jeff): make sure we catch if they have geolocation off on the iPhone
+    } else {
+      Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
+    }
   }
 });
-
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(function(position) {
-    yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
-    if (allPlayers && allPlayers[uid].hp > 0)
-      allPlayers[uid].coords = yourLocation;
-    // there is occasionally a weird display bug for this alert, crunching this all up into one
-    //if (position.coords.accuracy > 500)
-    //  Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.", Ext.emptyFn);
-    if (worldMap)
-      worldMap.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
-    if (socket.connected)
-      socket.send({ e: "init", uid: uid, loc: yourLocation });
-  }); // TODO(jeff): catch on error, make sure we catch if they have geolocation off on the iPhone
-} else {
-  Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
-}
 
 tick = function() {
   for (var i = 0; i < allMissiles.length; ++i) {
