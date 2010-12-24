@@ -5,7 +5,7 @@
 - V1 phonegap wrapper (uuid, new missile speeds/accel)
 - V1 on android, the markers don't render, the app seems frozeny (found open bug, which should be fixed in sencha touch 1.0.1 http://www.sencha.com/forum/showthread.php?111727-OPEN-403-Android-2.2-map-bug/page2)
 - nofix bug: name changes do not propogate
-- bug: missile count is sometimes wrong
 - try drawing using Pete's method (overlayView)
+- bug: missile count is sometimes wrong
 - missile button sometimes active when there are no missiles
 - notify if browser is not supported

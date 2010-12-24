@@ -1,8 +1,6 @@
 var mongodb = require('mongodb');
 var util = require('util');
 
-var app = require('./app');
-
 var default_port = mongodb.Connection.DEFAULT_PORT;
 var db = new mongodb.Db(APP_NAME, new mongodb.Server('localhost', default_port, {}), {native_parser: true});
 
