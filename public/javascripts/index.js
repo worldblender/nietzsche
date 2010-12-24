@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, populateMap, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton, defenseButtons, shieldToggle;
+var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton, defenseButtons, shieldToggle;
 var socket = new io.Socket('n.worldblender.com');
 
 TICK_INTERVAL = 700; // in ms. 700 for phones is okay
@@ -97,6 +97,8 @@ function drawPlayer(i, dropAnimation) {
   if (dropAnimation)
     dropAnim = google.maps.Animation.DROP;
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
+  if (allPlayers[i].marker)
+    allPlayers.[i].marker.setMap(null);
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
@@ -145,6 +147,24 @@ function drawMissile(i) {
     allMissiles[i].line = missilePath;
   }
 }
+
+function populateMap() {
+  for (var i in allPlayers) {
+    drawPlayer(i);
+  }
+
+  navigator.geolocation.watchPosition(function(position) {
+    if (yourLocation.lat === position.coords.latitude && yourLocation.lng === position.coords.longitude)
+      return; // no actual change in location
+    yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
+    if (allPlayers[uid].hp > 0) {
+      allPlayers[uid].coords.lat = position.coords.latitude;
+      allPlayers[uid].coords.lng = position.coords.longitude;
+      socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords });
+      allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+    }
+  });
+};
 
 function shieldToggle(t, button, pressed) {
   if (this.shieldTimer) {
@@ -305,24 +325,6 @@ socket.on('disconnect', function() {
   reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
   setTimeout(connectLoop, 2000);
 });
-
-populateMap = function() {
-  for (var i in allPlayers) {
-    drawPlayer(i);
-  }
-
-  navigator.geolocation.watchPosition(function(position) {
-    if (yourLocation.lat === position.coords.latitude && yourLocation.lng === position.coords.longitude)
-      return; // no actual change in location
-    yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
-    if (allPlayers[uid].hp > 0) {
-      allPlayers[uid].coords.lat = position.coords.latitude;
-      allPlayers[uid].coords.lng = position.coords.longitude;
-      socket.send({ e: "move", uid: uid, loc: allPlayers[uid].coords });
-      allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
-    }
-  });
-};
 
 Ext.setup({
   icon: '/images/icon.png',
