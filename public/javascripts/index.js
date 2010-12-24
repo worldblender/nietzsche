@@ -104,6 +104,7 @@ function drawPlayer(i, dropAnimation) {
       position: plocation,
       map: worldMap,
       animation: dropAnim,
+      clickable: actionButtons.getPressed() !== attackButton,
       icon: MI_Soldier
     });
     if (i === uid)
@@ -112,6 +113,7 @@ function drawPlayer(i, dropAnimation) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
       map: worldMap,
+      clickable: actionButtons.getPressed() !== attackButton,
       icon: MI_Dead
     });
   }
@@ -345,7 +347,6 @@ Ext.setup({
 
     actionToggle = function(t, button, pressed) {
       if (button.text === "Attack" && pressed) {
-        //Ext.Msg.alert(button.text, "Tap where you want to launch a missile or place a landmine");
         worldTopbar.setTitle("Tap target");
         for (var p in allPlayers) {
           if (allPlayers[p].marker)
@@ -493,11 +494,11 @@ Ext.setup({
       ]
     });
 
+/*TODO
     var onTap = function(subList, subIdx, el, e, detailCard) {
       var ds = subList.getStore(), r  = ds.getAt(subIdx);
       alert(r.get('text'));
     };
-/* TODO
     var missions = new Ext.NestedList({
       title: "Missions",
       iconCls: "favorites",
