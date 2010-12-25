@@ -224,6 +224,8 @@ exports.respawn = function(uid, callback) {
   db.players.findOne({_id: uid}, function(err, document) {
     document.hp = INITIAL_HP;
     document.aliveSince = (new Date()).getTime() + 0.01;
+    document.items.m.m = [null, null, null];
+    document.items.s = {e: SHIELD_ENERGY, a: 0};
     db.players.save(document, callback);
     db.events.insert({e: "respawn", uid: uid}, noCallback);
   });
