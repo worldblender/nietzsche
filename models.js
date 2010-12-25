@@ -168,9 +168,9 @@ function missileArrived(missile, socket) {
     for (var i = 0; i < document.items.m.m.length; ++i) {
       if (document.items.m.m[i] !== null && missile._id.str === document.items.m.m[i].str) {
         document.items.m.m[i] = null;
-        db.players.save(document, noCallback);
       }
     }
+    db.players.save(document, noCallback);
     db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
       var dmg = [];
       for (var i = 0; i < result.documents[0].results.length; ++i) {
