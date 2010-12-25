@@ -212,7 +212,7 @@ function missileArrived(missile, socket) {
         db.events.insert({e: "damaged", uid: obj._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
       }
       if (dmg.length > 0) {
-        // onsole.log("broadcasting damage: " + util.inspect(dmg));
+        // console.log("broadcasting damage: " + util.inspect(dmg));
         socket.broadcast({e: "damage", damage: dmg});
         db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
       }
