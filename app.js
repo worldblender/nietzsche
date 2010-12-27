@@ -25,33 +25,6 @@ if (!module.parent) {
   models.resetDb(); // TODO(jeff): change this to initializeDb in production
 }
 
-function sync(client, uid) {
-  // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
-  models.getAllMissiles(function(err, missileResults) {
-    models.getAllPlayers(function(err, playerResults) {
-      var playerDict = {};
-      for (var i in playerResults) {
-        var document = playerResults[i]; // TODO(jeff): optimize by not calcing if it's not you, and saving your calculations. in fact, move this whole function to models.js
-        if (document.items.s.a === 1 && document.items.s.t) {
-          document.items.s.e -= Math.ceil(((new Date()).getTime() - document.items.s.t) / 1000);
-          if (document.items.s.e < 0)
-            document.items.s.e = 0;
-        } else if (document.items.s.a === 0 && document.items.s.t) {
-          document.items.s.e += Math.floor(((new Date()).getTime() - document.items.s.t) / 1000);
-          if (document.items.s.e > 100)
-            document.items.s.e = 100;
-        }
-        document.items.s.t = (new Date()).getTime() + 0.01;
-        playerDict[document._id] = document;
-        if (document._id !== uid)
-          delete playerDict[document._id].items;
-      }
-      client.send({ e: "sync", missiles: missileResults, players: playerDict, time: (new Date()).getTime() });
-      console.log({ missiles: missileResults, players: playerDict, approxTime: (new Date()).getTime() });
-    });
-  });
-}
-
 // socket.io
 // TODO(jeff): compress/pack the socket.io .js file
 var socket = io.listen(app);
@@ -61,10 +34,10 @@ socket.on('connection', function(client) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
       var p = models.init(obj.uid, new models.Coords(obj.loc.lng, obj.loc.lat), function() {
-        sync(client, obj.uid);
+        models.sync(client, obj.uid);
         client.broadcast({e: "player", player: p});
       }, function(err, result) {
-        sync(client, obj.uid);
+        models.sync(client, obj.uid);
         client.broadcast({player: obj.uid, e: "moved", loc: obj.loc});
       });
     } else if (obj.e === "m") {

@@ -307,6 +307,7 @@ socket.on('message', function(obj) {
       attackButton.enable(true);
       defenseButton.enable(true);
       worldTopbar.setTitle("");
+      // TODO(jeff): reset missile count and shield badges
     }
     if (allPlayers[obj.player._id].marker)
       allPlayers[obj.player._id].marker.setMap(null);

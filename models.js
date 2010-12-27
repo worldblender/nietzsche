@@ -147,7 +147,7 @@ exports.events = function(uid, callback) {
   });
 }
 
-exports.getAllPlayers = function(callback) {
+function getAllPlayers(callback) {
   db.players.find(function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);
@@ -155,13 +155,42 @@ exports.getAllPlayers = function(callback) {
   });
 }
 
-exports.getAllMissiles = function(callback) {
+function getAllMissiles(callback) {
   db.missiles.find({arrivalTime: {$gt: (new Date()).getTime()}}, function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);
     });
   });
 }
+
+exports.sync = function(client, uid) {
+  // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
+  getAllMissiles(function(err, missileResults) {
+    getAllPlayers(function(err, playerResults) {
+      var playerDict = {};
+      for (var i in playerResults) {
+        var document = playerResults[i];
+        if (document._id === uid) {
+          if (document.items.s.a === 1 && document.items.s.t) {
+            document.items.s.e -= Math.ceil(((new Date()).getTime() - document.items.s.t) / 1000);
+            if (document.items.s.e < 0)
+              document.items.s.e = 0;
+          } else if (document.items.s.a === 0 && document.items.s.t) {
+            document.items.s.e += Math.floor(((new Date()).getTime() - document.items.s.t) / 1000);
+            if (document.items.s.e > 100)
+              document.items.s.e = 100;
+          }
+          document.items.s.t = (new Date()).getTime() + 0.01;
+        }
+        playerDict[document._id] = document;
+        if (document._id !== uid)
+          delete playerDict[document._id].items;
+      }
+      client.send({ e: "sync", missiles: missileResults, players: playerDict, time: (new Date()).getTime() });
+      console.log({ missiles: missileResults, players: playerDict, approxTime: (new Date()).getTime() });
+    });
+  });
+};
 
 function missileArrived(missile, socket) {
   db.players.findOne({_id: missile.owner}, function(err, document) {
