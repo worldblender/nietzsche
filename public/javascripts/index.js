@@ -5,7 +5,7 @@ TICK_INTERVAL = 700; // in ms. 700 for phones is okay
 BLAST_SPEED = 20; // must be even. 20 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
-MISSILE_RADIUS = 400; // in meters // TODO(jeff): we should be pulling these values from the items? but items are not send from server to client right now...
+MISSILE_RADIUS = 400; // in meters // TODO(jeff): we should be pulling these values from the items? but items for all players are not send from server to client right now...
 MISSILE_DAMAGE = 40;
 MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
@@ -307,15 +307,15 @@ socket.on('message', function(obj) {
       attackButton.enable(true);
       defenseButton.enable(true);
       worldTopbar.setTitle("");
-      // TODO(jeff): reset missile count and shield badges
+      allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
+      missileButton.setBadge(allPlayers[uid].readyMissiles);
+      if (allPlayers[uid].readyMissiles === 0)
+        missileButton.disable(true);
+      shieldButton.setBadge(allPlayers[uid].items.s.e);
     }
     if (allPlayers[obj.player._id].marker)
       allPlayers[obj.player._id].marker.setMap(null);
     allPlayers[obj.player._id] = obj.player;
-    //allPlayers[obj.player._id].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
-    //missileButton.setBadge(allPlayers[obj.player._id].readyMissiles);
-    //if (allPlayers[uid].readyMissiles === 0)
-    //  missileButton.disable(true);
     drawPlayer(obj.player._id, true);
   }
 });
