@@ -203,12 +203,13 @@ function missileArrived(missile, socket) {
     db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
       var dmg = [];
       for (var i = 0; i < result.documents[0].results.length; ++i) {
-        // TODO(jeff): race condition :-(   use findAndModify in the future
         var obj = result.documents[0].results[i].obj;
         if (obj.hp <= 0)
           continue;
-        var sdamage = 0;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
+
+        // might need redo-ing if update fails TODO(jeff): race condition
+        var sdamage = 0;
         if (obj.items.s.a === 1) {
           obj.items.s.e -= Math.ceil(((new Date()).getTime() - obj.items.s.t) / 1000);
           if (obj.items.s.e < 0)
@@ -228,15 +229,18 @@ function missileArrived(missile, socket) {
         if (obj.hp <= 0) {
           obj.hp = 0;
           obj.aliveSince = null;
-          if (obj._id !== document._id) {
-            document.gxp += 100;
-            db.players.save(document, noCallback);
-            socket.broadcast({e: "gxp", uid: document._id, gxp: 100});
-            db.events.insert({e: "kill", uid: missile.owner, data: obj._id}, noCallback);
-          }
-          db.events.insert({e: "killed", uid: obj._id, data: missile.owner}, noCallback); // redundant but nice
         }
         db.players.save(obj, noCallback);
+        // end of section that needs redo-ing if update fails
+
+        if (obj.hp === 0 && obj._id !== document._id) { // gained a kill if you didn't kill yourself
+          //document.gxp += 100;
+          //db.players.save(document, noCallback);
+          db.players.update({_id: document._id}, {$inc: {gxp: 100}});
+          socket.broadcast({e: "gxp", uid: document._id, gxp: 100});
+          db.events.insert({e: "kill", uid: missile.owner, data: obj._id}, noCallback);
+        }
+        db.events.insert({e: "killed", uid: obj._id, data: missile.owner}, noCallback); // redundant but nice
         dmg.push({player: obj._id, dmg: damage, sDmg: sdamage});
         db.events.insert({e: "damaged", uid: obj._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
       }
