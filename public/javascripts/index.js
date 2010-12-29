@@ -102,7 +102,7 @@ function drawPlayer(i, dropAnimation) {
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
-      map: worldMap,
+      map: worldMap.map,
       animation: dropAnim,
       clickable: actionButtons.getPressed() !== attackButton,
       icon: MI_Soldier
@@ -112,7 +112,7 @@ function drawPlayer(i, dropAnimation) {
   } else {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
-      map: worldMap,
+      map: worldMap.map,
       clickable: actionButtons.getPressed() !== attackButton,
       icon: MI_Dead
     });
@@ -145,7 +145,7 @@ function drawMissile(i) {
       strokeWeight: 2,
       clickable: false
     });
-    missilePath.setMap(worldMap);
+    missilePath.setMap(worldMap.map);
     allMissiles[i].line = missilePath;
   }
 }
@@ -354,13 +354,13 @@ Ext.setup({
             allPlayers[p].marker.setClickable(false);
         }
 
-        targetListener = google.maps.event.addListener(worldMap, "click", function(event) {
+        targetListener = google.maps.event.addListener(worldMap.map, "click", function(event) {
           if (target) {
             target.setMap(null); // clear previous marker
           }
           target = new google.maps.Marker({
             position: event.latLng,
-            map: worldMap,
+            map: worldMap.map,
             clickable: false,
             zIndex: 9999,
             icon: MI_Crosshairs
@@ -467,21 +467,19 @@ Ext.setup({
       initialCenter = new google.maps.LatLng(47.6063889, -122.3308333); // Seattle
     }
 
-    var mapContainer = new Ext.Container({
+    worldMap = new Ext.Map({
+      mapOptions: {
+        navigationControl: false,
+        center: initialCenter,
+        zoom: 13,
+        mapTypeId: "customMap",
+        mapTypeControl: false,
+        streetViewControl: false
+      },
       listeners: {
-        render: function() {
-          var mapContainerElement = document.getElementById(mapContainer.getId());
-          worldMap = new google.maps.Map(mapContainerElement, {
-            navigationControl: false,
-            center: initialCenter,
-            zoom: 13,
-            mapTypeId: "customMap",
-            mapTypeControl: false,
-            streetViewControl: false
-          });
-          worldMap.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
+        maprender: function(comp, map) {
+          map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
-          mapContainerElement.style.height = (world.getHeight() - worldTopbar.getHeight()) + "px";
         }
       }
     });
@@ -489,10 +487,8 @@ Ext.setup({
     var world = new Ext.Panel({
       iconCls: 'search',
       title: 'World',
-      items: [ mapContainer ],
-      dockedItems: [
-        worldTopbar
-      ]
+      items: [ worldMap ],
+      dockedItems: [ worldTopbar ]
     });
 
 /*TODO
@@ -622,7 +618,7 @@ Ext.setup({
         // there is occasionally a weird display bug for this alert, crunching this all up into one
         if (position.coords.accuracy > 500)
           Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.");
-        worldMap.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+        worldMap.map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
         if (socket.connected)
           socket.send({ e: "init", uid: uid, loc: yourLocation });
       }, function(error) {
@@ -668,7 +664,7 @@ tick = function() {
           fillColor: "#00FFFF",
           fillOpacity: 0.5,
           strokeColor: "#00FFFF",
-          map: worldMap,
+          map: worldMap.map,
           clickable: false,
           radius: BLAST_SPEED
         });
