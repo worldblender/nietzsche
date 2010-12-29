@@ -10,6 +10,19 @@ MISSILE_DAMAGE = 40;
 MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
 
+// hack workaround for map click bug (provided by Sencha Touch developer)
+Ext.gesture.Manager.onMouseEventOld = Ext.gesture.Manager.onMouseEvent;
+Ext.gesture.Manager.onMouseEvent = function(e) {
+  var target = e.target;
+  while (target) {
+    if (Ext.fly(target) && Ext.fly(target).hasCls('x-map')) {
+      return;
+    }
+    target = target.parentNode;
+  }
+  this.onMouseEventOld.apply(this, arguments);
+};
+
 MI_Crosshairs = new google.maps.MarkerImage(
   "/images/crosshairs.png",
   new google.maps.Size(40, 40),
