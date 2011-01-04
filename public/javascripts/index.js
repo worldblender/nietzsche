@@ -330,6 +330,15 @@ socket.on('message', function(obj) {
       allPlayers[obj.player._id].marker.setMap(null);
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id, true);
+  } else if (obj.e === "say") {
+    var sayBalloon = new google.maps.InfoWindow({
+      content: obj.msg,
+      disableAutoPan: true
+    });
+    sayBalloon.open(worldMap.map, allPlayers[obj.uid].marker);
+    setTimeout(function() {
+      sayBalloon.close();
+    }, 10000);
   }
 });
 
@@ -458,10 +467,22 @@ Ext.setup({
       items: [ attackButton, defenseButton ]
     });
 
+    var sayButton = new Ext.Button({
+      text: 'Say',
+      ui: 'action',
+      handler: function() {
+        Ext.Msg.prompt("Say what?", null, function(button, msg) {
+          if (button === "ok")
+            socket.send({ e: "say", uid: uid, msg: msg });
+        });
+      }
+    });
+
     worldTopbar = new Ext.Toolbar({
       dock: 'top',
       items: [
         actionButtons,
+        sayButton,
         { xtype: 'spacer' },
         missileButton,
         defenseButtons,

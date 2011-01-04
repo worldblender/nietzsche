@@ -62,6 +62,8 @@ socket.on('connection', function(client) {
       });
     } else if (obj.e === "shield") {
       models.shield(obj.uid, obj.active);
+    } else if (obj.e === "say") {
+      socket.broadcast(obj);
     }
   });
   client.on('disconnect', function() {
