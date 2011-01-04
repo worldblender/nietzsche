@@ -24,19 +24,19 @@ Ext.gesture.Manager.onMouseEvent = function(e) {
 };
 
 MI_Crosshairs = new google.maps.MarkerImage(
-  "/images/crosshairs.png",
+  "images/crosshairs.png",
   new google.maps.Size(40, 40),
   new google.maps.Point(0, 0),
   new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
 );
 MI_Soldier = new google.maps.MarkerImage(
-  "/images/soldier.png", 
+  "images/soldier.png", 
   new google.maps.Size(24, 24),
   new google.maps.Point(0, 0),
   new google.maps.Point(12, 12)
 );
 MI_Dead = new google.maps.MarkerImage(
-  "/images/dead.png", 
+  "images/dead.png", 
   new google.maps.Size(24, 24),
   new google.maps.Point(0, 0),
   new google.maps.Point(12, 12),
@@ -291,19 +291,19 @@ socket.on('message', function(obj) {
       var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
       eventHtml += "<br><font color='grey'>" + ts.getMonth() + "/" + ts.getDate() + " " + ts.getHours() + ":" + (ts.getMinutes() < 10 ? '0' : '') + ts.getMinutes() + ":" + (ts.getSeconds() < 10 ? '0' : '') + ts.getSeconds() + "</font> ";
       if (e.e === "missile") {
-        eventHtml += "Launched missile <img src='/images/missile.png'>";
+        eventHtml += "Launched missile <img src='images/missile.png'>";
       } else if (e.e === "kill") {
-        eventHtml += "Killed " + allPlayers[e.data].name + " <img src='/images/stamina.png'>";
+        eventHtml += "Killed " + allPlayers[e.data].name + " <img src='images/stamina.png'>";
       } else if (e.e === "killed") {
-        eventHtml += "Killed by " + allPlayers[e.data].name + " <img width='16' height='16' src='/images/dead.png'>";
+        eventHtml += "Killed by " + allPlayers[e.data].name + " <img width='16' height='16' src='images/dead.png'>";
       } else if (e.e === "damage") {
         eventHtml += "You hit";
         for (var j = 0; j < e.data.length; j++) {
           var d = e.data[j];
-          eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='/images/energy.png'>)";
+          eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='images/energy.png'>)";
         }
       } else if (e.e === "damaged") {
-        eventHtml += "Hit by missile (-" + e.data.dmg + " <img src='/images/health.png'>, -" + e.data.sDmg + "shieldimg)";
+        eventHtml += "Hit by missile (-" + e.data.dmg + " <img src='images/health.png'>, -" + e.data.sDmg + "shieldimg)";
       } else if (e.e === "respawn") {
         eventHtml += "Respawned";
       } else if (e.e === "shield") {
@@ -352,9 +352,9 @@ socket.on('disconnect', function() {
 });
 
 Ext.setup({
-  icon: '/images/icon.png',
-  tabletStartupScreen: '/images/tablet_startup.png',
-  phoneStartupScreen: '/images/phone_startup.jpeg',
+  icon: 'images/icon.png',
+  tabletStartupScreen: 'images/tablet_startup.png',
+  phoneStartupScreen: 'images/phone_startup.jpeg',
   glossOnIcon: true,
   onReady: function() {
     Ext.Msg.enterAnimation = false;
@@ -575,17 +575,17 @@ Ext.setup({
           var myxp = calcXP(allPlayers[uid]);
           // TODO(jeff): calculating kills method is a hack
           var statusHtml = "<table><tr><td>" +
-            "<img src='/images/health.png'> " +
+            "<img src='images/health.png'> " +
               allPlayers[uid].hp + " / 100<br></td><td>" +
-            "<img src='/images/missile.png'> " +
+            "<img src='images/missile.png'> " +
               allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
-            "<img src='/images/xp.png'> " +
+            "<img src='images/xp.png'> " +
               myxp + "xp <font size='-1'><b>" + getRank(myxp) + "</b></font><br></td><td>" +
-            "<img src='/images/energy.png'> " +
+            "<img src='images/energy.png'> " +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
-            "<img src='/images/stamina.png'> " +
+            "<img src='images/stamina.png'> " +
               allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
-            "<img src='/images/attack.png'> " +
+            "<img src='images/attack.png'> " +
               allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
           statusPane.update(statusHtml);
           socket.send({e: "events", uid: uid});
