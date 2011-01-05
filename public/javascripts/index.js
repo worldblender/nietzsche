@@ -27,7 +27,7 @@ MI_Crosshairs = new google.maps.MarkerImage(
   "images/crosshairs.png",
   new google.maps.Size(40, 40),
   new google.maps.Point(0, 0),
-  new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20!!! (on different computers, this offsets differently)
+  new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20! (on different computers, this offsets differently)
 );
 MI_Soldier = new google.maps.MarkerImage(
   "images/soldier.png", 
