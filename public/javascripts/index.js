@@ -289,7 +289,7 @@ socket.on('message', function(obj) {
     for (var k = 0; k < obj.events.length; k++) {
       var e = obj.events[k];
       var ts = new Date(parseInt(e._id.substring(0, 8), 16) * 1000);
-      eventHtml += "<br><font color='grey'>" + ts.getMonth() + "/" + ts.getDate() + " " + ts.getHours() + ":" + (ts.getMinutes() < 10 ? '0' : '') + ts.getMinutes() + ":" + (ts.getSeconds() < 10 ? '0' : '') + ts.getSeconds() + "</font> ";
+      eventHtml += "<br><font color='grey'>" + ts.getMonth()+1 + "/" + ts.getDate() + " " + ts.getHours() + ":" + (ts.getMinutes() < 10 ? '0' : '') + ts.getMinutes() + ":" + (ts.getSeconds() < 10 ? '0' : '') + ts.getSeconds() + "</font> ";
       if (e.e === "missile") {
         eventHtml += "Launched missile <img src='images/missile.png'>";
       } else if (e.e === "kill") {
@@ -581,7 +581,7 @@ Ext.setup({
               allPlayers[uid].readyMissiles + " missiles ready<br></td></tr><tr><td>" +
             "<img src='images/xp.png'> " +
               myxp + "xp <font size='-1'><b>" + getRank(myxp) + "</b></font><br></td><td>" +
-            "<img src='images/energy.png'> " +
+            "<img src='images/damage.png'> " +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
             "<img src='images/blast.png'> " +
               allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
