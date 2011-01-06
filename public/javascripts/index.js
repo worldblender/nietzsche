@@ -569,6 +569,7 @@ Ext.setup({
     var profile = new Ext.Panel({
       title: "Profile",
       iconCls: "user",
+      // TODO set colors... style: { backgroundColor: "black" },
       listeners: {
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
@@ -592,9 +593,7 @@ Ext.setup({
         }
       },
       items: [{
-        title: "Profile",
         xtype: "form",
-        id: "profile",
         scroll: "vertical",
         items: [
           usernameField,
