@@ -9,3 +9,4 @@
 - missile button sometimes active when there are no missiles
 - notify if browser is not supported
 - remove redundant socket.io (currently served by server's public/ and socket.io lib)
+- use google's computeDistance function instead of our own haversine function

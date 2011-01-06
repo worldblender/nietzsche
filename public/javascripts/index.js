@@ -503,12 +503,12 @@ Ext.setup({
 
     worldMap = new Ext.Map({
       mapOptions: {
-        navigationControl: false,
         center: initialCenter,
         zoom: 13,
         mapTypeId: "customMap",
         mapTypeControl: false,
-        streetViewControl: false
+        streetViewControl: false,
+        zoomControl: true
       },
       listeners: {
         maprender: function(comp, map) {
