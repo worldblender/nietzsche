@@ -305,7 +305,7 @@ socket.on('message', function(obj) {
       } else if (e.e === "damaged") {
         eventHtml += "Hit by missile (-" + e.data.dmg + " <img src='images/health.png'>, -" + e.data.sDmg + "<img src='images/shield.png'>)";
       } else if (e.e === "respawn") {
-        eventHtml += "Respawned";
+        eventHtml += "Respawned <img src='images/respawn.png'>";
       } else if (e.e === "shield") {
         if (e.active === 1)
           eventHtml += "Activated shields";
