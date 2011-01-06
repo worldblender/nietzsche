@@ -30,7 +30,7 @@ MI_Crosshairs = new google.maps.MarkerImage(
   new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20! (on different computers, this offsets differently)
 );
 MI_Soldier = new google.maps.MarkerImage(
-  "images/soldier.png", 
+  "images/alive.png", 
   new google.maps.Size(24, 24),
   new google.maps.Point(0, 0),
   new google.maps.Point(12, 12)
@@ -300,10 +300,10 @@ socket.on('message', function(obj) {
         eventHtml += "You hit";
         for (var j = 0; j < e.data.length; j++) {
           var d = e.data[j];
-          eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='images/energy.png'>)";
+          eventHtml += " " + allPlayers[d.player].name + " (" + d.dmg + " <img src='images/damage.png'>)";
         }
       } else if (e.e === "damaged") {
-        eventHtml += "Hit by missile (-" + e.data.dmg + " <img src='images/health.png'>, -" + e.data.sDmg + "shieldimg)";
+        eventHtml += "Hit by missile (-" + e.data.dmg + " <img src='images/health.png'>, -" + e.data.sDmg + "<img src='images/shield.png'>)";
       } else if (e.e === "respawn") {
         eventHtml += "Respawned";
       } else if (e.e === "shield") {
@@ -583,7 +583,7 @@ Ext.setup({
               myxp + "xp <font size='-1'><b>" + getRank(myxp) + "</b></font><br></td><td>" +
             "<img src='images/energy.png'> " +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
-            "<img src='images/stamina.png'> " +
+            "<img src='images/blast.png'> " +
               allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
             "<img src='images/attack.png'> " +
               allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
