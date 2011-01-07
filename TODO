@@ -1,7 +1,6 @@
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
 - run through jslint
 - compress javascript before production http://closure-compiler.appspot.com/
-- need iphone icon and screen
 - V1 phonegap wrapper (uuid, new missile speeds/accel)
 - nofix bug: name changes do not propogate
 - try drawing using Pete's method (overlayView)
