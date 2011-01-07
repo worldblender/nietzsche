@@ -62,7 +62,7 @@ function getRank(xp) {
   else if (xp < 1000)
     return "Agent";
   else
-    return "Professional";
+    return "Pro";
 }
 
 function calcXP(player) {
@@ -313,7 +313,7 @@ socket.on('message', function(obj) {
           eventHtml += "Deactivated shields";
       }
     }
-    eventPane.update(eventHtml);
+    eventPane.update('<font color="9afe2e">' + eventHtml + '</font>');
   } else if (obj.e === "respawn") {
     if (uid === obj.player._id) {
       respawnButton.hide();
@@ -569,7 +569,6 @@ Ext.setup({
     var profile = new Ext.Panel({
       title: "Profile",
       iconCls: "user",
-      // TODO set colors... style: { backgroundColor: "black" },
       listeners: {
         activate: function() {
           usernameField.setValue(allPlayers[uid].name);
@@ -584,17 +583,18 @@ Ext.setup({
               myxp + "xp <font size='-1'><b>" + getRank(myxp) + "</b></font><br></td><td>" +
             "<img src='images/damage.png'> " +
               allPlayers[uid].items.m.d + " max damage<br></td></tr><tr><td>" +
-            "<img src='images/blast.png'> " +
-              allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
             "<img src='images/attack.png'> " +
+              allPlayers[uid].gxp / 100 + " kills<br></td><td>" +
+            "<img src='images/blast.png'> " +
               allPlayers[uid].items.m.r + " blast radius</td></tr></table>";
-          statusPane.update(statusHtml);
+          statusPane.update('<font color="9afe2e">' + statusHtml + '</font>');
           socket.send({e: "events", uid: uid});
         }
       },
       items: [{
         xtype: "form",
         scroll: "vertical",
+        baseCls: "background",
         items: [
           usernameField,
           {
@@ -628,6 +628,7 @@ Ext.setup({
     new Ext.TabPanel({
       fullscreen: true,
       cardSwitchAnimation: false,
+      style: { backgroundColor: "black" },
       tabBar: {
         dock: 'bottom',
         layout: {

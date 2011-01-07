@@ -10,6 +10,12 @@ MapStyles.tron = [{
   ]
 },{
   featureType: "all",
+  elementType: "all",
+  stylers: [
+    { invert_lightness: true }
+  ]
+},{
+  featureType: "all",
   elementType: "labels",
   stylers: [
     { visibility: "off" }
@@ -37,21 +43,13 @@ MapStyles.tron = [{
   elementType: "labels",
   stylers: [
     { visibility: "on" },
-    { gamma: 0.39 },
-    { lightness: -4 },
-    { saturation: 100 }
+    { lightness: -40 }
   ]
 },{
   featureType: "landscape.man_made",
   elementType: "all",
   stylers: [
     { visibility: "off" }
-  ]
-},{
-  featureType: "all",
-  elementType: "all",
-  stylers: [
-    { invert_lightness: true }
   ]
 },{
   featureType: "poi",
