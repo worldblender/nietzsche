@@ -657,7 +657,7 @@ Ext.setup({
           socket.send({ e: "init", uid: uid, loc: yourLocation });
       }, function(error) {
         Ext.Msg.alert("Geolocation error", error.message);
-      }, {enableHighAccuracy:true, timeout:60000}); // TODO(jeff): make sure we catch if they have geolocation off on the iPhone
+      }, {enableHighAccuracy:true, timeout:20000}); // TODO(jeff): make sure we catch if they have geolocation off on the iPhone
     } else {
       Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
     }
