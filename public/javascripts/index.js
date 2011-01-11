@@ -91,12 +91,12 @@ function connectLoop() {
 }
 
 function killed() {
-  actionToggle(null, "Attack", false);
+  actionToggle(null, null, false);
   actionButtons.setPressed(attackButton, false);
   actionButtons.setPressed(defenseButton, false);
   attackButton.disable(true);
   defenseButton.disable(true);
-  worldTopbar.setTitle("You died");
+  worldTopbar.setTitle("<font size=-1>You died</font>");
   respawnButton.show();
 }
 
@@ -369,8 +369,8 @@ Ext.setup({
     };
 
     actionToggle = function(t, button, pressed) {
-      if (button.text === "Attack" && pressed) {
-        worldTopbar.setTitle("Tap target");
+      if (button === attackButton && pressed) {
+        worldTopbar.setTitle("<font size=-1>Tap target</font>");
         for (var p in allPlayers) {
           if (allPlayers[p].marker)
             allPlayers[p].marker.setClickable(false);
@@ -390,7 +390,7 @@ Ext.setup({
           missileButton.show();
           var distance = haversineDistance({lat: target.getPosition().lat(), lng: target.getPosition().lng()}, allPlayers[uid].coords);
           var duration = (-MISSILE_VELOCITY + Math.sqrt(MISSILE_VELOCITY * MISSILE_VELOCITY + 2 * MISSILE_ACCELERATION * distance)) / MISSILE_ACCELERATION;
-          worldTopbar.setTitle(Math.round(distance) + "m (" + Math.round(duration) + "s)");
+          worldTopbar.setTitle('<font size=-1>' + Math.round(distance) + "m (" + Math.round(duration) + "s)" + '</font>');
           //landmineButton.show(); TODO
         });
       } else {
@@ -409,7 +409,7 @@ Ext.setup({
             allPlayers[p].marker.setClickable(true);
         }
       }
-      if (button.text === "Defense" && pressed) {
+      if (button === defenseButton && pressed) {
         defenseButtons.show();
         defenseButtons.setPressed(shieldButton, allPlayers[uid].items.s.a === 1, true);
       } else {
@@ -452,12 +452,16 @@ Ext.setup({
     }); TODO(jeff): remove comment when adding this */
 
     attackButton = new Ext.Button({
-      text: 'Attack',
+      //text: 'A',
+      //icon: 'images/attack.png',
+      cls: 'attackButton',
       ui: 'action'
     });
 
     defenseButton = new Ext.Button({
-      text: 'Defense',
+      //text: 'D',
+      //icon: 'images/shield.png',
+      cls: 'defenseButton',
       ui: 'action'
     });
 
@@ -480,6 +484,9 @@ Ext.setup({
 
     worldTopbar = new Ext.Toolbar({
       dock: 'top',
+//      style: {
+//        fontSize: "1em"
+//      },
       items: [
         actionButtons,
         sayButton,

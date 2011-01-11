@@ -9,3 +9,4 @@
 - notify if browser is not supported
 - remove redundant socket.io (currently served by server's public/ and socket.io lib)
 - use google's computeDistance function instead of our own haversine function
+- Attack/Defense buttons need to go down and up (need masks)
