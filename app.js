@@ -27,7 +27,14 @@ if (!module.parent) {
 
 // socket.io
 // TODO(jeff): compress/pack the socket.io .js file
-var socket = io.listen(app);
+var socketOptions = {
+  transportOptions: { 
+    'xhr-polling': {
+      closeTimeout: 15000
+    }
+  }
+};
+var socket = io.listen(app, socketOptions);
 socket.on('connection', function(client) {
   console.log('socket.io connection: ' + client.sessionId);
   client.on('message', function(obj) {
