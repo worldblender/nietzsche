@@ -484,6 +484,7 @@ Ext.setup({
 
     worldTopbar = new Ext.Toolbar({
       dock: 'top',
+      title: '<font size=-1>GPS Missiles</font>',
 //      style: {
 //        fontSize: "1em"
 //      },
