@@ -354,7 +354,7 @@ socket.on('disconnect', function() {
 Ext.setup({
   icon: 'images/icon.png',
   tabletStartupScreen: 'images/tablet_startup.png',
-  phoneStartupScreen: 'images/phone_startup.jpeg',
+  phoneStartupScreen: 'images/phone_startup.png',
   glossOnIcon: true,
   onReady: function() {
     Ext.Msg.enterAnimation = false;
