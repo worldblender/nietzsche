@@ -22,7 +22,7 @@ app.configure(function(){
 if (!module.parent) {
   app.listen(80);
   console.log("Express server listening on port %d", app.address().port)
-  models.resetDb(); // TODO(jeff): change this to initializeDb in production
+  models.initializeDb();
 }
 
 // socket.io

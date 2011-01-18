@@ -266,6 +266,10 @@ exports.respawn = function(uid, callback) {
 
 exports.shield = function(uid, active) {
   db.players.findOne({_id: uid}, function(err, document) {
+    if (!document) {
+      console.log("Error: called 'shield' with invalid uid. uid: " + uid);
+      return;
+    }
     if (document.items.s.a === 1 && active === 0 && document.items.s.t) {
       document.items.s.e -= Math.ceil(((new Date()).getTime() - document.items.s.t) / 1000);
       if (document.items.s.e < 0)
