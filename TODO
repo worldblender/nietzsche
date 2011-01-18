@@ -1,6 +1,4 @@
 - maybe check out sencha touch "pop" animation for when bombs explode and damage you
-- run through jslint
-- compress javascript before production http://closure-compiler.appspot.com/
 - V1 phonegap wrapper (uuid, new missile speeds/accel)
 - nofix bug: name changes do not propogate
 - try drawing using Pete's method (overlayView)
@@ -11,4 +9,3 @@
 - use google's computeDistance function instead of our own haversine function
 - Attack/Defense buttons need to go down and up (need masks)
 - your own missiles to be a different color and thinner, but always be on top
-

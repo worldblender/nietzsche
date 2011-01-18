@@ -30,13 +30,13 @@ MI_Crosshairs = new google.maps.MarkerImage(
   new google.maps.Point(23, 23) // TODO(jeff): I don't know why this isn't 20, 20! (on different computers, this offsets differently)
 );
 MI_Soldier = new google.maps.MarkerImage(
-  "images/alive.png", 
+  "images/alive.png",
   new google.maps.Size(24, 24),
   new google.maps.Point(0, 0),
   new google.maps.Point(12, 12)
 );
 MI_Dead = new google.maps.MarkerImage(
-  "images/dead.png", 
+  "images/dead.png",
   new google.maps.Size(24, 24),
   new google.maps.Point(0, 0),
   new google.maps.Point(12, 12),
@@ -51,7 +51,7 @@ function haversineDistance(coords1, coords2) {
   var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(coords1.lat * Math.PI / 180) * Math.cos(coords2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   var d = RAD_TO_METERS * c;
-  return d;  
+  return d;
 }
 
 function getRank(xp) {
@@ -179,7 +179,7 @@ function populateMap() {
       allPlayers[uid].marker.setPosition(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
     }
   });
-};
+}
 
 shieldToggle = function(t, button, pressed) {
   if (this.shieldTimer) {
@@ -193,7 +193,7 @@ shieldToggle = function(t, button, pressed) {
     this.shieldTimer = setInterval(function() {
       if (allPlayers[uid].items.s.e > 0) {
         allPlayers[uid].items.s.e--;
-        shieldButton.setBadge(allPlayers[uid].items.s.e)
+        shieldButton.setBadge(allPlayers[uid].items.s.e);
       }
       if (allPlayers[uid].items.s.e === 0) {
         clearInterval(this.shieldTimer);
@@ -204,11 +204,11 @@ shieldToggle = function(t, button, pressed) {
     if (button !== "sync") {
       socket.send({e: "shield", uid: uid, active: 0});
       allPlayers[uid].items.s.a = 0;
-    } 
+    }
     this.shieldTimer = setInterval(function() {
       if (allPlayers[uid].items.s.e < 100) {
         allPlayers[uid].items.s.e++;
-        shieldButton.setBadge(allPlayers[uid].items.s.e)
+        shieldButton.setBadge(allPlayers[uid].items.s.e);
       }
       if (allPlayers[uid].items.s.e === 100) {
         clearInterval(this.shieldTimer);
@@ -241,7 +241,7 @@ socket.on('message', function(obj) {
           allMissiles[m].line.setMap(null);
       }
     }
-    shieldToggle(null, "sync", allPlayers[uid].items.s.a === 1)
+    shieldToggle(null, "sync", allPlayers[uid].items.s.a === 1);
     allMissiles = obj.missiles;
     if (allPlayers[uid].hp <= 0 && worldTopbar) {
       killed();
@@ -427,7 +427,7 @@ Ext.setup({
 
     shieldButton = new Ext.Button({
       text: 'Shield',
-      ui: 'action',
+      ui: 'action'
     });
     shieldButton.setWidth(94);
 
@@ -665,7 +665,7 @@ Ext.setup({
           socket.send({ e: "init", uid: uid, loc: yourLocation });
       }, function(error) {
         Ext.Msg.alert("Geolocation error", error.message);
-      }, {enableHighAccuracy:true, timeout:20000}); // TODO(jeff): make sure we catch if they have geolocation off on the iPhone
+      }, {enableHighAccuracy: true, timeout: 20000}); // TODO(jeff): make sure we catch if they have geolocation off on the iPhone
     } else {
       Ext.Msg.alert("No Geolocation", "Your browser does not support geolocation. Please try a different browser.");
     }
