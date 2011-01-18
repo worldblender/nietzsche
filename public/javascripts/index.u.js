@@ -352,8 +352,7 @@ socket.on('disconnect', function() {
 });
 
 Ext.setup({
-  icon: 'images/icon.png',
-  tabletStartupScreen: 'images/tablet_startup.png',
+  icon: 'icon.png',
   phoneStartupScreen: 'images/phone_startup.png',
   glossOnIcon: true,
   onReady: function() {
