@@ -293,7 +293,7 @@ socket.on('message', function(obj) {
       if (e.e === "missile") {
         eventHtml += "Launched missile <img src='images/missile.png'>";
       } else if (e.e === "kill") {
-        eventHtml += "Killed " + allPlayers[e.data].name + " <img src='images/stamina.png'>";
+        eventHtml += "Killed " + allPlayers[e.data].name + " <img src='images/dead.png'>";
       } else if (e.e === "killed") {
         eventHtml += "Killed by " + allPlayers[e.data].name + " <img width='16' height='16' src='images/dead.png'>";
       } else if (e.e === "damage") {
