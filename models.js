@@ -230,8 +230,8 @@ function calcDamage(damagedPlayer, damage, attacker, dmg, socket) {
         db.players.update({_id: attacker._id}, {$inc: {gxp: 100}});
         socket.broadcast({e: "gxp", uid: attacker._id, gxp: 100});
         db.events.insert({e: "kill", uid: attacker._id, data: damagedPlayer._id}, noCallback);
+        db.events.insert({e: "killed", uid: damagedPlayer._id, data: attacker._id}, noCallback); // redundant but nice
       }
-      db.events.insert({e: "killed", uid: damagedPlayer._id, data: attacker._id}, noCallback); // redundant but nice
       dmg.push({player: damagedPlayer._id, dmg: damage, sDmg: sdamage});
       db.events.insert({e: "damaged", uid: damagedPlayer._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
     }
