@@ -192,7 +192,7 @@ exports.sync = function(client, uid) {
   });
 };
 
-function calcDamage(damagedPlayer, damage, attacker, dmg) {
+function calcDamage(damagedPlayer, damage, attacker, dmg, socket) {
   console.log("calcDamage: " + attacker._id + " did " + damage + " damage to " + damagedPlayer._id);
   if (damagedPlayer.hp <= 0)
     return;
@@ -223,7 +223,7 @@ function calcDamage(damagedPlayer, damage, attacker, dmg) {
     if (err) {
       console.log("Race condition, retrying. update result: " + util.inspect(result) + "  |  update err: " + util.inspect(err));
       db.players.findOne({_id: damagedPlayer._id}, function(err, document) {
-        calcDamage(document, damage, attacker, dmg);
+        calcDamage(document, damage, attacker, dmg, socket);
       });
     } else {
       if (damagedPlayer.hp === 0 && damagedPlayer._id !== attacker._id) { // gained a kill if you didn't kill yourself
@@ -251,7 +251,7 @@ function missileArrived(missile, socket) {
       for (var i = 0; i < result.documents[0].results.length; ++i) {
         var obj = result.documents[0].results[i].obj;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
-        calcDamage(obj, damage, document, dmg);
+        calcDamage(obj, damage, document, dmg, socket);
       }
       if (dmg.length > 0) {
         // console.log("broadcasting damage: " + util.inspect(dmg));

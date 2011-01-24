@@ -36,7 +36,6 @@ var socketOptions = {
 };
 var socket = io.listen(app, socketOptions);
 socket.on('connection', function(client) {
-  console.log('socket.io connection: ' + client.sessionId);
   client.on('message', function(obj) {
     console.log("message: " + util.inspect(obj));
     if (obj.e === "init") {
@@ -74,6 +73,5 @@ socket.on('connection', function(client) {
     }
   });
   client.on('disconnect', function() {
-    console.log('socket.io disconnect');
   });
 });
