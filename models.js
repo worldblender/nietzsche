@@ -192,6 +192,52 @@ exports.sync = function(client, uid) {
   });
 };
 
+function calcDamage(damagedPlayer, damage, attacker, dmg) {
+  console.log("calcDamage: " + attacker._id + " did " + damage + " damage to " + damagedPlayer._id);
+  if (damagedPlayer.hp <= 0)
+    return;
+  var old_hp = damagedPlayer.hp;
+  var old_shield_e = damagedPlayer.items.s.e;
+  var sdamage = 0;
+  if (damagedPlayer.items.s.a === 1) {
+    damagedPlayer.items.s.e -= Math.ceil(((new Date()).getTime() - damagedPlayer.items.s.t) / 1000);
+    if (damagedPlayer.items.s.e < 0)
+      damagedPlayer.items.s.e = 0;
+    damagedPlayer.items.s.t = (new Date()).getTime() + 0.01;
+    if (damagedPlayer.items.s.e >= damage) {
+      damagedPlayer.items.s.e -= damage;
+      sdamage = damage;
+      damage = 0;
+    } else {
+      damage -= damagedPlayer.items.s.e;
+      sdamage = damagedPlayer.items.s.e;
+      damagedPlayer.items.s.e = 0;
+    }
+  }
+  damagedPlayer.hp -= damage;
+  if (damagedPlayer.hp <= 0) {
+    damagedPlayer.hp = 0;
+    damagedPlayer.aliveSince = null;
+  }
+  db.players.update({_id: damagedPlayer._id, hp: old_hp, "items.s.e": old_shield_e}, damagedPlayer, {safe: true}, function(err, result) {
+    if (err) {
+      console.log("Race condition, retrying. update result: " + util.inspect(result) + "  |  update err: " + util.inspect(err));
+      db.players.findOne({_id: damagedPlayer._id}, function(err, document) {
+        calcDamage(document, damage, attacker, dmg);
+      });
+    } else {
+      if (damagedPlayer.hp === 0 && damagedPlayer._id !== attacker._id) { // gained a kill if you didn't kill yourself
+        db.players.update({_id: attacker._id}, {$inc: {gxp: 100}});
+        socket.broadcast({e: "gxp", uid: attacker._id, gxp: 100});
+        db.events.insert({e: "kill", uid: attacker._id, data: damagedPlayer._id}, noCallback);
+      }
+      db.events.insert({e: "killed", uid: damagedPlayer._id, data: attacker._id}, noCallback); // redundant but nice
+      dmg.push({player: damagedPlayer._id, dmg: damage, sDmg: sdamage});
+      db.events.insert({e: "damaged", uid: damagedPlayer._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
+    }
+  });
+}
+
 function missileArrived(missile, socket) {
   db.players.findOne({_id: missile.owner}, function(err, document) {
     for (var i = 0; i < document.items.m.m.length; ++i) {
@@ -204,45 +250,8 @@ function missileArrived(missile, socket) {
       var dmg = [];
       for (var i = 0; i < result.documents[0].results.length; ++i) {
         var obj = result.documents[0].results[i].obj;
-        if (obj.hp <= 0)
-          continue;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
-
-        // might need redo-ing if update fails TODO(jeff): race condition
-        var sdamage = 0;
-        if (obj.items.s.a === 1) {
-          obj.items.s.e -= Math.ceil(((new Date()).getTime() - obj.items.s.t) / 1000);
-          if (obj.items.s.e < 0)
-            obj.items.s.e = 0;
-          obj.items.s.t = (new Date()).getTime() + 0.01;
-          if (obj.items.s.e >= damage) {
-            obj.items.s.e -= damage;
-            sdamage = damage;
-            damage = 0;
-          } else {
-            damage -= obj.items.s.e;
-            sdamage = obj.items.s.e;
-            obj.items.s.e = 0;
-          }
-        }
-        obj.hp -= damage;
-        if (obj.hp <= 0) {
-          obj.hp = 0;
-          obj.aliveSince = null;
-        }
-        db.players.save(obj, noCallback);
-        // end of section that needs redo-ing if update fails
-
-        if (obj.hp === 0 && obj._id !== document._id) { // gained a kill if you didn't kill yourself
-          //document.gxp += 100;
-          //db.players.save(document, noCallback);
-          db.players.update({_id: document._id}, {$inc: {gxp: 100}});
-          socket.broadcast({e: "gxp", uid: document._id, gxp: 100});
-          db.events.insert({e: "kill", uid: missile.owner, data: obj._id}, noCallback);
-        }
-        db.events.insert({e: "killed", uid: obj._id, data: missile.owner}, noCallback); // redundant but nice
-        dmg.push({player: obj._id, dmg: damage, sDmg: sdamage});
-        db.events.insert({e: "damaged", uid: obj._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
+        calcDamage(obj, damage, document, dmg);
       }
       if (dmg.length > 0) {
         // console.log("broadcasting damage: " + util.inspect(dmg));
