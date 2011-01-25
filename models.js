@@ -1,4 +1,5 @@
 var mongodb = require('mongodb');
+
 var util = require('util');
 
 var default_port = mongodb.Connection.DEFAULT_PORT;
@@ -220,6 +221,7 @@ function calcDamage(damagedPlayer, damage, attacker, dmg, socket) {
     damagedPlayer.hp = 0;
     damagedPlayer.aliveSince = null;
   }
+  dmg.push({player: damagedPlayer._id, dmg: damage, sDmg: sdamage}); // TODO(jeff): this does not fix the race condition! BUG
   db.players.update({_id: damagedPlayer._id, hp: old_hp, "items.s.e": old_shield_e}, damagedPlayer, {safe: true}, function(err, result) {
     if (err) {
       console.log("Race condition, retrying. update result: " + util.inspect(result) + "  |  update err: " + util.inspect(err));
@@ -233,7 +235,7 @@ function calcDamage(damagedPlayer, damage, attacker, dmg, socket) {
         db.events.insert({e: "kill", uid: attacker._id, data: damagedPlayer._id}, noCallback);
         db.events.insert({e: "killed", uid: damagedPlayer._id, data: attacker._id}, noCallback); // redundant but nice
       }
-      dmg.push({player: damagedPlayer._id, dmg: damage, sDmg: sdamage});
+      //console.log("Pushing damage " + damage + " on " + damagedPlayer._id);
       db.events.insert({e: "damaged", uid: damagedPlayer._id, data: {dmg: damage, sDmg: sdamage}}, noCallback); // redundant but nice
     }
   });
@@ -250,11 +252,12 @@ function missileArrived(missile, socket) {
     db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
       var dmg = [];
       for (var i = 0; i < result.documents[0].results.length; ++i) {
+        //console.log("Going through player " + i);
         var obj = result.documents[0].results[i].obj;
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         calcDamage(obj, damage, document, dmg, socket);
       }
-      console.log("DEBUG dmg: " + util.inspect(dmg));
+      //console.log("DEBUG dmg: " + util.inspect(dmg));
       if (dmg.length > 0) {
         socket.broadcast({e: "damage", damage: dmg});
         db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
