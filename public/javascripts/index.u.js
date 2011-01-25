@@ -581,6 +581,7 @@ Ext.setup({
           usernameField.setValue(allPlayers[uid].name);
           var myxp = calcXP(allPlayers[uid]);
           // TODO(jeff): calculating kills method is a hack
+          allPlayers[uid].readyMissiles = numReadyMissiles(allPlayers[uid].items.m.m);
           var statusHtml = "<table><tr><td>" +
             "<img src='images/health.png'> " +
               allPlayers[uid].hp + " / 100<br></td><td>" +
