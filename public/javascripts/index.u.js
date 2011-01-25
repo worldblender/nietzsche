@@ -7,7 +7,7 @@ BLAST_SPEED = 20; // must be even. 20 for phones is okay
 RAD_TO_METERS = 6371 * 1000;
 MISSILE_RADIUS = 400; // in meters // TODO(jeff): we should be pulling these values from the items? but items for all players are not send from server to client right now...
 MISSILE_DAMAGE = 40;
-MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
+MISSILE_VELOCITY = 20; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
 
 // hack workaround for map click bug (provided by Sencha Touch developer)

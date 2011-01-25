@@ -11,7 +11,7 @@ LANDMINE_RADIUS = 200; // in meters
 LANDMINE_DAMAGE = 20;
 MISSILE_RADIUS = 400; // in meters
 MISSILE_DAMAGE = 40;
-MISSILE_VELOCITY = 50; // TODO(jeff): 2 is the value we'll have in production
+MISSILE_VELOCITY = 20; // TODO(jeff): 2 is the value we'll have in production
 MISSILE_ACCELERATION = 0.0868; // TODO(jeff): divide by 10 for production
 
 // physical constants
@@ -59,7 +59,8 @@ exports.Missile = function(uid, arrivalCoords, socket, callback) {
   db.players.findOne({_id: uid}, function(err, document) {
     if (!document)
       return;
-    // TODO(jeff): check for error
+    if (err)
+      console.log("Error: Could not create missile. Missile owner: " + uid + " err: " + util.inspect(err));
     // TODO(jeff): another race condition here. player launching 2 missiles at the same time might get them both launched
     for (var i = 0; i < document.items.m.m.length; i++) {
       if (document.items.m.m[i] == null) {
@@ -253,8 +254,8 @@ function missileArrived(missile, socket) {
         var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
         calcDamage(obj, damage, document, dmg, socket);
       }
+      console.log("DEBUG dmg: " + util.inspect(dmg));
       if (dmg.length > 0) {
-        // console.log("broadcasting damage: " + util.inspect(dmg));
         socket.broadcast({e: "damage", damage: dmg});
         db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
       }
