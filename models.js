@@ -1,5 +1,4 @@
 var mongodb = require('mongodb');
-
 var util = require('util');
 
 var default_port = mongodb.Connection.DEFAULT_PORT;

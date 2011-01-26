@@ -1,7 +1,7 @@
 var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton, defenseButtons, shieldToggle;
 var socket = new io.Socket('n.worldblender.com');
 
-TICK_INTERVAL = 700; // in ms. 700 for phones is okay
+TICK_INTERVAL = 900; // in ms. 700 for phones is okay
 BLAST_SPEED = 20; // must be even. 20 for phones is okay
 
 RAD_TO_METERS = 6371 * 1000;
