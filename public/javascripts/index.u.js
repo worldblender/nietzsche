@@ -1,4 +1,4 @@
-var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton, defenseButtons, shieldToggle;
+var target, targetListener, missileButton, shieldButton, landmineButton, worldMap, worldTopbar, allPlayers, allMissiles, serverTimeDiff, tick, uid, reconnectBox, eventPane, yourLocation, attackButton, actionButtons, actionToggle, respawnButton, defenseButton, defenseButtons, shieldToggle, mc;
 var socket = new io.Socket('n.worldblender.com');
 
 TICK_INTERVAL = 900; // in ms. 700 for phones is okay
@@ -110,8 +110,10 @@ function drawPlayer(i, dropAnimation) {
   if (dropAnimation)
     dropAnim = google.maps.Animation.DROP;
   //console.log("drawPlayer for " + i + " with hp=" + allPlayers[i].hp);
-  if (allPlayers[i].marker)
+  if (allPlayers[i].marker) {
+    mc.removeMarker(allPlayers[i].marker);
     allPlayers[i].marker.setMap(null);
+  }
   if (allPlayers[i].hp > 0) {
     allPlayers[i].marker = new google.maps.Marker({
       position: plocation,
@@ -130,6 +132,7 @@ function drawPlayer(i, dropAnimation) {
       icon: MI_Dead
     });
   }
+  mc.addMarker(allPlayers[i].marker);
   allPlayers[i].marker.info = allPlayers[i];
   google.maps.event.addListener(allPlayers[i].marker, 'click', function() {
     if (this.info.hp > 0) {
@@ -230,8 +233,10 @@ socket.on('message', function(obj) {
     serverTimeDiff = obj.time - (new Date()).getTime();
     if (allPlayers) {
       for (var p in allPlayers) {
-        if (allPlayers[p].marker)
+        if (allPlayers[p].marker) {
+          mc.removeMarker(allPlayers[p].marker);
           allPlayers[p].marker.setMap(null);
+        }
       }
     }
     allPlayers = obj.players;
@@ -269,6 +274,7 @@ socket.on('message', function(obj) {
       allPlayers[obj.damage[i].player].hp -= obj.damage[i].dmg;
       if (allPlayers[obj.damage[i].player].hp <= 0 && obj.damage[i].dmg > 0) {
         allPlayers[obj.damage[i].player].hp = 0;
+        mc.removeMarker(allPlayers[obj.damage[i].player].marker);
         allPlayers[obj.damage[i].player].marker.setMap(null);
         allPlayers[obj.damage[i].player].aliveSince = null;
         drawPlayer(obj.damage[i].player);
@@ -326,8 +332,10 @@ socket.on('message', function(obj) {
         missileButton.disable(true);
       shieldButton.setBadge(allPlayers[uid].items.s.e);
     }
-    if (allPlayers[obj.player._id].marker)
+    if (allPlayers[obj.player._id].marker) {
+      mc.removeMarker(allPlayers[obj.player._id].marker);
       allPlayers[obj.player._id].marker.setMap(null);
+    }
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id, true);
   } else if (obj.e === "say") {
@@ -519,6 +527,7 @@ Ext.setup({
       },
       listeners: {
         maprender: function(comp, map) {
+          mc = new MarkerClusterer(worldMap.map, null, { zoomOnClick : false });
           map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
         }
