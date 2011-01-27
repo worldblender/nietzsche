@@ -340,7 +340,7 @@ socket.on('message', function(obj) {
     drawPlayer(obj.player._id, true);
   } else if (obj.e === "say") {
     if (allPlayers[obj.uid].sayBalloon)
-      sayBalloon.styleIcon.set('text', obj.msg);
+      allPlayers[obj.uid].sayBalloon.styleIcon.set('text', obj.msg);
     else {
       allPlayers[obj.uid].sayBalloon = new StyledMarker({styleIcon: new StyledIcon(StyledIconTypes.BUBBLE, {text: obj.msg}), position: allPlayers[obj.uid].marker.getPosition(), map: worldMap.map});
       setTimeout(function() {
