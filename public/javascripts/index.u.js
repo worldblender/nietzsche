@@ -339,14 +339,14 @@ socket.on('message', function(obj) {
     allPlayers[obj.player._id] = obj.player;
     drawPlayer(obj.player._id, true);
   } else if (obj.e === "say") {
-    var sayBalloon = new google.maps.InfoWindow({
-      content: obj.msg,
-      disableAutoPan: true
-    });
-    sayBalloon.open(worldMap.map, allPlayers[obj.uid].marker);
-    setTimeout(function() {
-      sayBalloon.close();
-    }, 10000);
+    if (allPlayers[obj.uid].sayBalloon)
+      sayBalloon.styleIcon.set('text', obj.msg);
+    else {
+      allPlayers[obj.uid].sayBalloon = new StyledMarker({styleIcon: new StyledIcon(StyledIconTypes.BUBBLE, {text: obj.msg}), position: allPlayers[obj.uid].marker.getPosition(), map: worldMap.map});
+      setTimeout(function() {
+        sayBalloon.setMap(null);
+      }, 86400000); // 24 hours
+    }
   }
 });
 
@@ -527,7 +527,7 @@ Ext.setup({
       },
       listeners: {
         maprender: function(comp, map) {
-          mc = new MarkerClusterer(worldMap.map, null, { zoomOnClick : false });
+          mc = new MarkerClusterer(worldMap.map, null, { zoomOnClick: false, maxZoom: 16});
           map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
         }
