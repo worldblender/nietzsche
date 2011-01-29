@@ -527,7 +527,7 @@ Ext.setup({
       },
       listeners: {
         maprender: function(comp, map) {
-          mc = new MarkerClusterer(worldMap.map, null, { zoomOnClick: false, maxZoom: 14});
+          mc = new MarkerClusterer(worldMap.map, null, { zoomOnClick: false, maxZoom: 14, gridSize: 40 });
           map.mapTypes.set("customMap", new google.maps.StyledMapType(MapStyles.tron, {name: "Custom Style"}));
           socket.connect(); // TODO(jeff): check for connection? see socket.io's tryTransportsOnConnectTimeout
         }
