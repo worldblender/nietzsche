@@ -29,7 +29,7 @@ if (!module.parent) {
 var socketOptions = {
   transportOptions: { 
     'xhr-polling': {
-      closeTimeout: 15000
+      closeTimeout: 1000000
     }
   }
 };
