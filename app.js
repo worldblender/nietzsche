@@ -26,7 +26,6 @@ if (!module.parent) {
 }
 
 // socket.io
-// TODO(jeff): compress/pack the socket.io .js file
 var socketOptions = {
   transportOptions: { 
     'xhr-polling': {
