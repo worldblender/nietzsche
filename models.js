@@ -250,16 +250,18 @@ function missileArrived(missile, socket) {
     db.players.save(document, noCallback);
     db.executeDbCommand({geoNear: "players", near: missile.arrivalCoords, maxDistance: MISSILE_RADIUS / RAD_TO_METERS, spherical: true}, function(err, result) {
       var dmg = [];
-      for (var i = 0; i < result.documents[0].results.length; ++i) {
-        //console.log("Going through player " + i);
-        var obj = result.documents[0].results[i].obj;
-        var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
-        calcDamage(obj, damage, document, dmg, socket);
-      }
-      //console.log("DEBUG dmg: " + util.inspect(dmg));
-      if (dmg.length > 0) {
-        socket.broadcast({e: "damage", damage: dmg});
-        db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
+      if (result.documents[0].results) {
+        for (var i = 0; i < result.documents[0].results.length; ++i) {
+          //console.log("Going through player " + i);
+          var obj = result.documents[0].results[i].obj;
+          var damage = Math.ceil(document.items.m.d * (document.items.m.r - result.documents[0].results[i].dis * RAD_TO_METERS) / document.items.m.r);
+          calcDamage(obj, damage, document, dmg, socket);
+        }
+        //console.log("DEBUG dmg: " + util.inspect(dmg));
+        if (dmg.length > 0) {
+          socket.broadcast({e: "damage", damage: dmg});
+          db.events.insert({e: "damage", uid: missile.owner, data: dmg}, noCallback);
+        }
       }
     });
   });
