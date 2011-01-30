@@ -666,7 +666,6 @@ Ext.setup({
         yourLocation = {lat: position.coords.latitude, lng: position.coords.longitude};
         if (allPlayers && allPlayers[uid].hp > 0)
           allPlayers[uid].coords = yourLocation;
-        // there is occasionally a weird display bug for this alert, crunching this all up into one
         if (position.coords.accuracy > 1000)
           Ext.Msg.alert("Geolocation Approximation", "You location is currently only accurate within " + Math.round(position.coords.accuracy) + " meters.");
         worldMap.map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
