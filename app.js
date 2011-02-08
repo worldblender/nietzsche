@@ -28,8 +28,24 @@ if (!module.parent) {
 // socket.io
 var socketOptions = {
   transportOptions: { 
-    'xhr-polling': {
-      closeTimeout: 1000000
+    'flashsocket': {
+      closeTimeout: 1000000,
+      timeout: 100000
+    }, 'websocket': {
+      closeTimeout: 1000000,
+      timeout: 100000
+    }, 'htmlfile': {
+      closeTimeout: 1000000,
+      timeout: 100000
+    }, 'xhr-multipart': {
+      closeTimeout: 1000000,
+      timeout: 100000
+    }, 'xhr-polling': {
+      closeTimeout: 1000000,
+      timeout: 100000
+    }, 'jsonp-polling': {
+      closeTimeout: 1000000,
+      timeout: 100000
     }
   }
 };

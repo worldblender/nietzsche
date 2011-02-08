@@ -483,7 +483,7 @@ Ext.setup({
       ui: 'action',
       handler: function() {
         Ext.Msg.prompt("Say what?", null, function(button, msg) {
-          if (button === "ok")
+          if (button === "ok" && msg)
             socket.send({ e: "say", uid: uid, msg: msg });
         });
       }
