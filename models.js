@@ -149,7 +149,7 @@ exports.events = function(uid, callback) {
 }
 
 function getAllPlayers(callback) {
-  db.players.find(function(err, cursor) {
+  db.players.find({hp: {$gt: 0 }}, function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);
     });
