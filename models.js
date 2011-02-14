@@ -148,8 +148,8 @@ exports.events = function(uid, callback) {
   });
 }
 
-function getAllPlayers(callback) {
-  db.players.find({hp: {$gt: 0 }}, function(err, cursor) {
+function getAllPlayers(myUid, callback) {
+  db.players.find({$or: [{hp: {$gt: 0}}, {_id: myUid}]}, function(err, cursor) {
     cursor.toArray(function(err, results) {
       callback(err, results);
     });
@@ -167,7 +167,7 @@ function getAllMissiles(callback) {
 exports.sync = function(client, uid) {
   // TODO(jeff): change this to send only missiles that are en route and in the vicinity, and players that are in the vicinity
   getAllMissiles(function(err, missileResults) {
-    getAllPlayers(function(err, playerResults) {
+    getAllPlayers(uid, function(err, playerResults) {
       var playerDict = {};
       for (var i in playerResults) {
         var document = playerResults[i];
