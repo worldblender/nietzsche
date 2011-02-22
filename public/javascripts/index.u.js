@@ -355,7 +355,7 @@ socket.on('connect', function() {
     socket.send({ e: "init", uid: uid, loc: yourLocation });
 });
 socket.on('disconnect', function() {
-  reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
+  //reconnectBox = Ext.Msg.show({title: 'Disconnected', msg: "Attempting to automatically reconnect...", buttons: []});
   setTimeout(connectLoop, 2000);
 });
 
